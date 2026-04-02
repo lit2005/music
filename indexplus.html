@@ -1,10 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Моя страница</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Music Cosmic Clone</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <h1>Привет, мир!</h1>
+
+    <aside class="sidebar">
+        <div class="logo">
+            <span class="logo-icon">▶</span> Music
+        </div>
+        
+        <nav>
+            <a href="#" class="nav-item active">
+                <img src="assets/home.png" class="nav-icon red-tint" alt="Home">
+                Home
+            </a>
+            <a href="#" class="nav-item">
+                <img src="assets/explore.png" class="nav-icon teal-tint" alt="Explore">
+                Explore
+            </a>
+            <a href="#" class="nav-item">
+                <img src="assets/library.png" class="nav-icon gold-tint" alt="Library">
+                Library
+            </a>
+        </nav>
+
+        <div class="divider"></div>
+
+        <button class="btn-new-playlist"><span>+</span> New Playlist</button>
+
+        <div class="playlist-section">
+            <div class="playlist-item">
+                <div class="playlist-title">Liked Music</div>
+                <div class="playlist-sub">★ Auto Playlist</div>
+            </div>
+            <div class="playlist-item">
+                <div class="playlist-title">My Playlist 🌼🌈</div>
+                <div class="playlist-sub">Lily DN</div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="search-container">
+                <input type="text" placeholder="Search deep within...">
+            </div>
+            <div class="user-profile-glow">
+                <div class="avatar-circle">
+                    <img src="assets/avatar.png" alt="Profile">
+                </div>
+            </div>
+        </header>
+
+<div class="mood-pills">
+    <button class="pill active">Гарний настрій</button>
+    <button class="pill">Релакс</button>
+    <button class="pill">Енергія</button>
+    <button class="pill">У дорозі</button>
+    <button class="pill">Сум</button>
+    <button class="pill">Романтика</button>
+    <button class="pill">Тренування</button>
+    <button class="pill">Вечірка</button>
+    <button class="pill">Фокус</button>
+    <button class="pill">Сон</button>
+</div>
+
+        <section class="content-section">
+            <div class="section-header">
+                <div class="user-info-row">
+                    <div class="small-avatar"></div>
+                    <div class="title-text">
+                        <span class="username">LILY DN</span>
+                        <h2 class="glow-text">Listen again</h2>
+                    </div>
+                </div>
+                <div class="navigation-controls">
+                    <button class="control-btn">More</button>
+                    <button class="arrow-btn">&gt;</button>
+                </div>
+            </div>
+
+            <div class="music-grid">
+                <div class="card pink-glow">
+                    <div class="img-wrapper">
+                        <img src="assets/cover1.jpg" class="card-img" alt="pocket locket">
+                        <div class="play-overlay">▶</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="song-name">pocket locket</div>
+                        <div class="song-desc">Song • Alaina Castillo</div>
+                    </div>
+                </div>
+
+                <div class="card white-glow">
+                    <div class="img-wrapper">
+                        <img src="assets/cover2.jpg" class="card-img" alt="About You">
+                        <div class="play-overlay">▶</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="song-name">About You</div>
+                        <div class="song-desc">The 1975 • 39M views</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/main.js"></script>
 </body>
 </html>
