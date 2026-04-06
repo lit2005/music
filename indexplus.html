@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Music Cosmic Clone</title>
+    <title>YouTube Music Clone - Cosmic Edition</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -15,31 +15,26 @@
         
         <nav>
             <a href="#" class="nav-item active">
-                <img src="assets/home.png" class="nav-icon red-tint" alt="Home">
-                Home
+                <img src="assets/home.png" class="nav-icon red-tint" alt="Головна">
+                Головна
             </a>
             <a href="#" class="nav-item">
-                <img src="assets/explore.png" class="nav-icon teal-tint" alt="Explore">
-                Explore
+                <img src="assets/explore.png" class="nav-icon teal-tint" alt="Огляд">
+                Огляд
             </a>
             <a href="#" class="nav-item">
-                <img src="assets/library.png" class="nav-icon gold-tint" alt="Library">
-                Library
+                <img src="assets/library.png" class="nav-icon gold-tint" alt="Бібліотека">
+                Бібліотека
             </a>
         </nav>
 
         <div class="divider"></div>
-
-        <button class="btn-new-playlist"><span>+</span> New Playlist</button><br>
+        <button class="btn-new-playlist"><span>+</span> Новий плейліст</button>
 
         <div class="playlist-section">
             <div class="playlist-item">
-                <div class="playlist-title">Liked Music</div><br>
-                <div class="playlist-sub">★ Auto Playlist</div><br>
-            </div>
-            <div class="playlist-item"><br>
-                <div class="playlist-title">My Playlist 🌼🌈</div><br>
-                <div class="playlist-sub">Lily DN</div><br>
+                <div class="playlist-title">Улюблене</div>
+                <div class="playlist-sub">★ Автоплейліст</div>
             </div>
         </div>
     </aside>
@@ -47,7 +42,7 @@
     <main class="main-content">
         <header class="top-bar">
             <div class="search-container">
-                <input type="text" placeholder="Шукайте свою музику...">
+                <input type="text" id="searchInput" placeholder="Шукайте свою музику...">
             </div>
             <div class="user-profile-glow">
                 <div class="avatar-circle">
@@ -56,90 +51,82 @@
             </div>
         </header>
 
-<div class="mood-pills">
-    <button class="pill active">Гарний настрій</button>
-    <button class="pill">Релакс</button>
-    <button class="pill">Енергія</button>
-    <button class="pill">У дорозі</button>
-    <button class="pill">Сум</button>
-    <button class="pill">Романтика</button>
-    <button class="pill">Тренування</button>
-    <button class="pill">Вечірка</button>
-    <button class="pill">Фокус</button>
-    <button class="pill">Сон</button>
-</div>
+        <div class="mood-pills">
+            <button class="pill active">Гарний настрій</button>
+            <button class="pill">Релакс</button>
+            <button class="pill">Енергія</button>
+            <button class="pill">У дорозі</button>
+            <button class="pill">Сум</button>
+            <button class="pill">Романтика</button>
+            <button class="pill">Тренування</button>
+            <button class="pill">Вечірка</button>
+            <button class="pill">Фокус</button>
+            <button class="pill">Сон</button>
+        </div>
 
         <section class="content-section">
             <div class="section-header">
                 <div class="user-info-row">
-                    <div class="small-avatar"></div>
                     <div class="title-text">
-                        <span class="username">LILY DN</span><br>
+                        <span class="username">LILY DN</span>
                         <h2 class="glow-text">Слухати знову</h2>
                     </div>
                 </div>
-                <div class="navigation-controls">
-                    <button class="control-btn">Більше</button>
-                    <button class="arrow-btn">&gt;</button>
-
-                </div>
-            </div><br>
-
-            <div class="music-grid">
-                <div class="card pink-glow">
-                    <div class="img-wrapper">
-                        <img src="assets/cover1.jpg" class="card-img" alt="pocket locket">
-                        <div class="play-overlay">▶</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="song-name">pocket locket</div>
-                        <div class="song-desc">Song • Alaina Castillo</div>
-                    </div>
-                </div>
-
-                <div class="card white-glow">
-                    <div class="img-wrapper">
-                        <img src="assets/cover2.jpg" class="card-img" alt="About You">
-                        <div class="play-overlay">▶</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="song-name">About You</div>
-                        <div class="song-desc">The 1975 • 39M views</div>
-                    </div>
-                </div>
             </div>
+
+            <<div class="music-grid">
+    <div class="card pink-glow">
+        <div class="img-wrapper">
+            <img src="assets/cover1.jpg" class="card-img" alt="">
+            <div class="play-overlay">▶</div>
+        </div>
+        <div class="card-body">
+            <div class="song-name">No Sleep</div>
+            <div class="song-desc">Kontraa • Hip-hop</div>
+        </div>
+    </div>
+
+    <div class="card teal-glow">
+        <div class="img-wrapper">
+            <img src="assets/cover2.jpg" class="card-img" alt="">
+            <div class="play-overlay">▶</div>
+        </div>
+        <div class="card-body">
+            <div class="song-name">Berry Groovy</div>
+            <div class="song-desc">Giorgio Vitte • Bass Trap</div>
+        </div>
+    </div>
+</div>
         </section>
     </main>
 
-    <script src="js/main.js"></script>
-</body>
-<footer class="player-bar">
+    <footer class="player-bar">
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
         <div class="player-controls">
-            <button class="player-btn prev">⏮</button>
-            <button class="player-btn play-pause">▶</button>
-            <button class="player-btn next">⏭</button>
+            <button class="player-btn">⏮</button>
+            <button id="mainPlayBtn" class="player-btn play-pause">▶</button>
+            <button class="player-btn">⏭</button>
         </div>
 
         <div class="player-info">
-            <img src="assets/cover1.jpg" class="current-track-img" alt="">
+            <img src="assets/cover1.jpg" class="current-track-img" id="currentTrackImg">
             <div class="track-meta">
-                <div class="track-title">pocket locket</div>
-                <div class="track-artist">Alaina Castillo</div>
+                <div class="track-title" id="currentTrackTitle">pocket locket</div>
+                <div class="track-artist" id="currentTrackArtist">Alaina Castillo</div>
             </div>
-            <button class="like-btn">♡</button>
-        </div>
-
-        <div class="progress-container">
-            <span class="time current">0:00</span>
-            <div class="progress-bar">
-                <div class="progress-fill"></div>
-            </div>
-            <span class="time total">3:45</span>
         </div>
 
         <div class="volume-controls">
-            <button class="volume-btn">🔊</button>
-            <input type="range" class="volume-slider" min="0" max="100" value="70">
+            <span>🔊</span>
+            <input type="range" class="volume-slider" min="0" max="100" value="80">
         </div>
     </footer>
+
+    <script src="./js/main.js"></script>
+</body>
 </html>

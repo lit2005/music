@@ -1,77 +1,123 @@
-// 1. Находим элементы
-const playBtn = document.getElementById('mainPlayBtn');
-const progressFill = document.getElementById('progressFill');
-const trackTitle = document.querySelector('.track-title');
-const trackArtist = document.querySelector('.track-artist');
-const trackImg = document.querySelector('.current-track-img');
+// Чекаємо завантаження всього DOM
+document.addEventListener('DOMContentLoaded', () => {
 
-// Создаем объект аудио (пока без файла)
-let currentAudio = new Audio(); 
-let isPlaying = false;
-let progressInterval;
+    // === 1. ЗНАХОДИМО ЕЛЕМЕНТИ ===
+    const playBtn = document.getElementById('mainPlayBtn');
+    const progressFill = document.getElementById('progressFill');
+    const searchInput = document.getElementById('searchInput');
+    const allCards = document.querySelectorAll('.card');
+    const volumeSlider = document.querySelector('.volume-slider');
 
-// 2. Функция переключения Play/Pause
-function togglePlay() {
-    if (!currentAudio.src) return; // Если файл не выбран, ничего не делаем
+    // Елементи оновлення UI плеера
+    const currentTrackTitle = document.getElementById('currentTrackTitle');
+    const currentTrackArtist = document.getElementById('currentTrackArtist');
+    const currentTrackImg = document.getElementById('currentTrackImg');
 
-    if (isPlaying) {
-        pauseTrack();
-    } else {
-        playTrack();
+    // === 2. СТАН ПЛЕЕРА ===
+    let currentAudio = new Audio(); // Об'єкт для відтворення звуку
+    let isPlaying = false;
+    let progressInterval;
+
+    // === 3. ЛОГІКА ПОШУКУ ===
+    if (searchInput) {
+        searchInput.addEventListener('input', (event) => {
+            const searchTerm = event.target.value.toLowerCase(); // Текст пошуку в нижньому регістрі
+
+            allCards.forEach(card => {
+                // Шукаємо текст в назві пісні та виконавця
+                const songName = card.querySelector('.song-name').innerText.toLowerCase();
+                const artistName = card.querySelector('.song-desc').innerText.toLowerCase();
+
+                // Якщо текст знайдено, показуємо картку, інакше приховуємо
+                if (songName.includes(searchTerm) || artistName.includes(searchTerm)) {
+                    card.style.display = 'block';
+                    card.style.animation = 'fadeIn 0.3s ease'; // Легка анімація появи
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
     }
-}
 
-function playTrack() {
-    isPlaying = true;
-    playBtn.innerText = '⏸';
-    currentAudio.play();
-    
-    // Очищаем старый интервал перед запуском нового
-    clearInterval(progressInterval);
-    
-    progressInterval = setInterval(() => {
+    // === 4. ЛОГІКА ПЛЕЕРА ===
+
+    // Функція запуску треку
+    function playTrack() {
+        isPlaying = true;
+        playBtn.innerText = '⏸'; // Міняємо іконку на паузу
+        currentAudio.play();
+        
+        // Запускаємо оновлення полоски прогресу
+        clearInterval(progressInterval); // Чистимо старий інтервал
+        progressInterval = setInterval(updateProgress, 500); // Оновлюємо кожні 0.5 сек
+    }
+
+    // Функція паузи треку
+    function pauseTrack() {
+        isPlaying = false;
+        playBtn.innerText = '▶'; // Міняємо іконку на плей
+        currentAudio.pause();
+        clearInterval(progressInterval); // Зупиняємо оновлення полоски
+    }
+
+    // Оновлення полоски прогресу
+    function updateProgress() {
         if (currentAudio.duration) {
             const percent = (currentAudio.currentTime / currentAudio.duration) * 100;
             progressFill.style.width = percent + '%';
         }
-    }, 500);
-}
+    }
 
-function pauseTrack() {
-    isPlaying = false;
-    playBtn.innerText = '▶';
-    currentAudio.pause();
-    clearInterval(progressInterval);
-}
+    // Клік по картці — запуск нової пісні
+    allCards.forEach((card, index) => {
+        card.addEventListener('click', () => {
+            // Отримуємо дані з натиснутої картки
+            const songName = card.querySelector('.song-name').innerText;
+            const artistName = card.querySelector('.song-desc').innerText;
+            const imgSource = card.querySelector('.card-img').src;
 
-// 3. Выбор песни из карточки
-document.querySelectorAll('.card').forEach((card, index) => {
-    card.addEventListener('click', () => {
-        const songName = card.querySelector('.song-name').innerText;
-        const artistName = card.querySelector('.song-desc').innerText;
-        const imgSource = card.querySelector('.card-img').src;
+            // Оновлюємо UI нижнього плеера
+            currentTrackTitle.innerText = songName;
+            currentTrackArtist.innerText = artistName;
+            currentTrackImg.src = imgSource;
 
-        // Обновляем текст и картинку в плеере
-        trackTitle.innerText = songName;
-        trackArtist.innerText = artistName;
-        trackImg.src = imgSource;
-
-        // Подставляем файл. 
-        // ВАЖНО: Назови файлы в папке audio как track0.mp3, track1.mp3 и т.д.
-        // Или замени путь на конкретный файл
-        currentAudio.src = `audio/track${index}.mp3`; 
-        
-        // Сбрасываем полоску и запускаем
-        progressFill.style.width = '0%';
-        playTrack();
+            // Підставляємо файл: audio/track0.mp3, audio/track1.mp3...
+            currentAudio.src = `audio/track${index}.mp3`; 
+            
+            // Скидаємо прогрес і запускаємо
+            progressFill.style.width = '0%';
+            playTrack();
+        });
     });
-});
 
-// Слушатель клика на главную кнопку
-playBtn.addEventListener('click', togglePlay);
+    // Слухач кліка на головну кнопку Play/Pause
+    playBtn.addEventListener('click', () => {
+        if (!currentAudio.src) return; // Якщо файл не вибрано, нічого не робимо
 
-// Если песня закончилась сама
-currentAudio.addEventListener('ended', () => {
-    pauseTrack();
-    progressFill.style.width = '0%';
+        if (isPlaying) {
+            pauseTrack();
+        } else {
+            playTrack();
+        }
+    });
+
+    // Якщо пісня закінчилася сама
+    currentAudio.addEventListener('ended', () => {
+        pauseTrack();
+        progressFill.style.width = '0%';
+    });
+
+    // === 5. ЛОГІКА ГУЧНОСТІ ===
+    if (volumeSlider) {
+        // Встановлюємо початкову гучність (наприклад, 80%)
+        currentAudio.volume = volumeSlider.value / 100;
+const volumeSlider = document.querySelector('.volume-slider');
+console.log("Знайдено повзунок:", volumeSlider); // ДОДАЙ ЦЕЙ РЯДОК
+        // Слухаємо зміни повзунка
+        volumeSlider.addEventListener('input', (e) => {
+            const volumeValue = e.target.value / 100; // Переводимо 0-100 у 0.0-1.0
+            currentAudio.volume = volumeValue;
+            console.log("Гучність змінена на: " + volumeValue); 
+        });
+    }
 });
