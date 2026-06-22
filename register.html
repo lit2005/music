@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Реєстрація - Music Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Ізолюємо body сторінки реєстрації, щоб скинути сітку та відступи з style.css */
+        body.auth-body {
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            min-height: 100vh !important;
+            overflow: hidden !important;
+            background: #0a0e14 !important;
+        }
+
+        /* Контейнер займає рівно 100% вікна і центрує форму */
+        .auth-container {
+            width: 100%;
+            height: 100vh;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box;
+        }
+
+        /* Сама форма реєстрації */
+        .auth-form {
+            background: #1a1e26; 
+            padding: 40px; 
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            width: 350px; 
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            z-index: 999;
+        }
+        .auth-form h2 {
+            color: white;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-family: sans-serif;
+        }
+        .auth-form input {
+            width: 100%; 
+            padding: 12px; 
+            margin: 10px 0; 
+            border-radius: 8px;
+            border: 1px solid #2d3440; 
+            background: #0a0e14; 
+            color: white;
+            box-sizing: border-box;
+        }
+        .auth-btn {
+            width: 100%; 
+            padding: 12px; 
+            background: white; 
+            color: black;
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        .auth-btn:hover {
+            background: #e0e0e0;
+        }
+        .back-link { 
+            display: block; 
+            margin-top: 15px; 
+            color: #8a94a6; 
+            text-decoration: none; 
+            font-size: 14px; 
+        }
+        .back-link:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body class="auth-body">
+
+   <div class="auth-container">
+    <form class="auth-form">
+        <h2 class="glow-text">Реєстрація</h2>
+        <input type="text" placeholder="Имя пользователя" required>
+        <input type="text" placeholder="Email" required>
+        <input type="password" placeholder="Пароль" required>
+        <button type="submit" class="auth-btn">Создать акаунт</button>
+        <a href="indexplus.html" class="back-link">← На главную</a>
+    </form>
+</div>
+
+</body>
+</html>

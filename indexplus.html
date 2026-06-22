@@ -31,12 +31,7 @@
         <div class="divider"></div>
         <button class="btn-new-playlist"><span>+</span> Новий плейліст</button>
 
-        <div class="playlist-section">
-            <div class="playlist-item">
-                <div class="playlist-title">Улюблене</div>
-                <div class="playlist-sub">★ Автоплейліст</div>
-            </div>
-        </div>
+        <div class="playlist-section"></div>
     </aside>
 
     <main class="main-content">
@@ -44,11 +39,11 @@
             <div class="search-container">
                 <input type="text" id="searchInput" placeholder="Шукайте свою музику...">
             </div>
-            <div class="user-profile-glow">
+            <a href="register.html" class="user-profile-glow" style="text-decoration: none; cursor: pointer;">
                 <div class="avatar-circle">
                     <img src="assets/avatar.png" alt="Profile">
                 </div>
-            </div>
+            </a>
         </header>
 
         <div class="mood-pills">
@@ -74,29 +69,7 @@
                 </div>
             </div>
 
-            <<div class="music-grid">
-    <div class="card pink-glow">
-        <div class="img-wrapper">
-            <img src="assets/cover1.jpg" class="card-img" alt="">
-            <div class="play-overlay">▶</div>
-        </div>
-        <div class="card-body">
-            <div class="song-name">No Sleep</div>
-            <div class="song-desc">Kontraa • Hip-hop</div>
-        </div>
-    </div>
-
-    <div class="card teal-glow">
-        <div class="img-wrapper">
-            <img src="assets/cover2.jpg" class="card-img" alt="">
-            <div class="play-overlay">▶</div>
-        </div>
-        <div class="card-body">
-            <div class="song-name">Berry Groovy</div>
-            <div class="song-desc">Giorgio Vitte • Bass Trap</div>
-        </div>
-    </div>
-</div>
+            <div class="music-grid"></div>
         </section>
     </main>
 
@@ -109,20 +82,26 @@
 
         <div class="player-controls">
             <button class="player-btn">⏮</button>
-            <button id="mainPlayBtn" class="player-btn play-pause">▶</button>
+            <button id="mainPlayBtn" class="player-btn play-pause">
+                <img src="assets/play.png" id="playBtnImg" alt="Play">
+            </button>
             <button class="player-btn">⏭</button>
+            
+            <button id="repeatBtn" class="player-btn repeat-control" title="Повторювати трек">
+                <img src="assets/backup.png" id="repeatBtnImg" alt="Repeat">
+            </button>
         </div>
 
         <div class="player-info">
             <img src="assets/cover1.jpg" class="current-track-img" id="currentTrackImg">
             <div class="track-meta">
-                <div class="track-title" id="currentTrackTitle">pocket locket</div>
-                <div class="track-artist" id="currentTrackArtist">Alaina Castillo</div>
+                <div class="track-title" id="currentTrackTitle">Програвач порожній</div>
+                <div class="track-artist" id="currentTrackArtist">Оберіть трек</div>
             </div>
         </div>
 
         <div class="volume-controls">
-            <span>🔊</span>
+            <img src="assets/audio-speaker1.png" class="volume-icon" alt="Volume">
             <input type="range" class="volume-slider" min="0" max="100" value="80">
         </div>
     </footer>
