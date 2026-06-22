@@ -1,14 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // === 1. БІБЛІОТЕКА ПІСЕНЬ ===
+    // === 1. БІБЛІОТЕКА ПІСЕНЬ (ФІНАЛЬНІ ПРАВИЛЬНІ ШЛЯХИ) ===
     const songs = [
         { id: 0, title: "No Sleep", artist: "Kontraa", cover: "assets/cover1.jpg", file: "audio/track0.mp3", mood: "Енергія" },
         { id: 1, title: "Berry Groovy", artist: "Giorgio Vitte", cover: "assets/cover2.jpg", file: "audio/track1.mp3", mood: "Релакс" },
         { id: 2, title: "Вода | Афро-поп музика", artist: "контра", cover: "assets/cover3.jpg", file: "audio/track2.mp3", mood: "Фокус" },
-        { id: 3, title: "Хайп | Дрилл Музика", artist: "контра", cover: "assets/cover4.jpg", file: "audio/track3.mp3", mood: "Фокус" }
+        { id: 3, title: "Хайп | Дрилл Музика", artist: "контра", cover: "assets/cover4.jpg", file: "audio/track3.mp3", mood: "Фокус" },
+        // Після перенесення файлів у папки проєкту, ці шляхи стануть активними:
+        { id: 4, title: "No Copyright Music", artist: "SigmaMusicArt", cover: "assets/17-00-18-274_200x200.png", file: "audio/sigmamusicart-no-copyright-music-537751.mp3", mood: "Енергія" },
+        { id: 5, title: "Acoustic Spring", artist: "Ikoliks", cover: "assets/12-50-38-402_200x200.jpg", file: "audio/ikoliks_aj-acoustic-spring-mothers-day-music-320427.mp3", mood: "Релакс" }
     ];
 
-    // Списки треків у плейлістах
+    // Дані для карток розділу "Огляд"
+    const exploreCategories = [
+        { name: "Новинки", icon: "✨", color: "linear-gradient(135deg, #ff0055, #7000ff)" },
+        { name: "Хіти", icon: "🔥", color: "linear-gradient(135deg, #ff9900, #ff5500)" },
+        { name: "Настрій", icon: "🎭", color: "linear-gradient(135deg, #00f2fe, #4facfe)" },
+        { name: "Жанри", icon: "🎸", color: "linear-gradient(135deg, #43e97b, #38f9d7)" }
+    ];
+
     let likedSongs = [];
     let customPlaylists = {};
 
@@ -29,6 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const playlistSection = document.querySelector('.playlist-section');
     const btnNewPlaylist = document.querySelector('.btn-new-playlist');
 
+    const moodContainer = document.querySelector('.mood-pills') || document.querySelector('.pills-container') || moodPills[0]?.parentElement;
+    const searchContainer = document.querySelector('.search-container') || searchInput?.parentElement;
+
+    const navItems = document.querySelectorAll('.nav-item');
+
     const currentTrackTitle = document.getElementById('currentTrackTitle');
     const currentTrackArtist = document.getElementById('currentTrackArtist');
     const currentTrackImg = document.getElementById('currentTrackImg');
@@ -41,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === 2. РЕНДЕР КАРТОК ПІСЕНЬ ===
     function renderLibrary(list) {
         if (!musicGrid) return;
+        musicGrid.removeAttribute('style'); 
         musicGrid.innerHTML = '';
 
         if (list.length === 0) {
@@ -103,6 +119,84 @@ document.addEventListener('DOMContentLoaded', () => {
             musicGrid.appendChild(card);
         });
     }
+
+    // === РЕНДЕР СЕКЦІЇ "ОГЛЯД" ===
+    function renderExplore() {
+        if (!musicGrid) return;
+        musicGrid.innerHTML = '';
+        currentViewMode = "explore";
+
+        musicGrid.style.display = 'grid';
+        musicGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(240px, 1fr))';
+        musicGrid.style.gap = '25px';
+        musicGrid.style.padding = '20px 0';
+
+        exploreCategories.forEach(cat => {
+            const expCard = document.createElement('div');
+            expCard.style.background = cat.color;
+            expCard.style.borderRadius = '20px';
+            expCard.style.height = '160px';
+            expCard.style.display = 'flex';
+            expCard.style.flexDirection = 'column';
+            expCard.style.justifyContent = 'space-between';
+            expCard.style.padding = '25px';
+            expCard.style.cursor = 'pointer';
+            expCard.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
+            expCard.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
+
+            expCard.innerHTML = `
+                <span style="color: white; font-size: 24px; font-weight: bold; font-family: sans-serif;">${cat.name}</span>
+                <span style="font-size: 50px; align-self: flex-end;">${cat.icon}</span>
+            `;
+
+            expCard.addEventListener('mouseenter', () => {
+                expCard.style.transform = 'translateY(-5px) scale(1.02)';
+                expCard.style.boxShadow = '0 12px 25px rgba(255,255,255,0.1)';
+            });
+            expCard.addEventListener('mouseleave', () => {
+                expCard.style.transform = 'translateY(0) scale(1)';
+                expCard.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
+            });
+
+            expCard.addEventListener('click', () => {
+                alert(`Ви відкрили категорію: ${cat.name}`);
+            });
+
+            musicGrid.appendChild(expCard);
+        });
+    }
+
+    // === УПРАВЛІННЯ SIDEBAR ===
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            navItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+
+            const text = item.innerText.trim();
+            const heading = document.querySelector('.glow-text');
+
+            if (text.includes("Огляд")) {
+                if (heading) heading.innerText = "Огляд";
+                if (moodContainer) moodContainer.style.display = 'none';
+                if (searchContainer) searchContainer.style.display = 'none';
+                renderExplore(); 
+            } else {
+                if (moodContainer) moodContainer.style.display = 'flex';
+                if (searchContainer) searchContainer.style.display = 'flex';
+
+                if (text.includes("Головна")) {
+                    if (heading) heading.innerText = "Слухати знову";
+                    currentViewMode = "all";
+                    currentFilteredSongs = [...songs];
+                    renderLibrary(songs);
+                } else if (text.includes("Бібліотека")) {
+                    if (heading) heading.innerText = "Твоя Бібліотека";
+                    renderLibrary(songs);
+                }
+            }
+        });
+    });
 
     // === 3. РОБОТА З ПЛЕЄРОМ ===
     function playTrack() {
@@ -177,9 +271,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const heading = document.querySelector('.glow-text');
             if (heading) heading.innerText = "Слухати знову";
 
+            navItems.forEach(i => i.classList.remove('active'));
+            if(navItems[0]) navItems[0].classList.add('active');
+
             const selectedMood = pill.innerText.trim();
             
-            // Якщо обрано "Гарний настрій" — повертаємо копію всіх пісень
             if (selectedMood === "Гарний настрій") {
                 currentFilteredSongs = [...songs];
             } else {
@@ -191,6 +287,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
+            if(currentViewMode === "explore") return; 
+
             const term = e.target.value.toLowerCase();
             const baseList = currentViewMode === "all" ? currentFilteredSongs : getActivePlaylistSongs();
             const filtered = baseList.filter(s => 
@@ -245,8 +343,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function showLikedPlaylist(element) {
         currentViewMode = "playlist-liked";
         moodPills.forEach(p => p.classList.remove('active'));
+        navItems.forEach(i => i.classList.remove('active'));
         document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('active-playlist'));
         if (element) element.classList.add('active-playlist');
+
+        if (moodContainer) moodContainer.style.display = 'flex'; 
+        if (searchContainer) searchContainer.style.display = 'flex';
 
         const heading = document.querySelector('.glow-text');
         if (heading) heading.innerText = "Улюблене";
@@ -258,8 +360,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function selectCustomPlaylist(name, element) {
         currentViewMode = `playlist-custom-${name}`;
         moodPills.forEach(p => p.classList.remove('active'));
+        navItems.forEach(i => i.classList.remove('active'));
         document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('active-playlist'));
         element.classList.add('active-playlist');
+
+        if (moodContainer) moodContainer.style.display = 'flex'; 
+        if (searchContainer) searchContainer.style.display = 'flex';
 
         const heading = document.querySelector('.glow-text');
         if (heading) heading.innerText = name;
@@ -310,21 +416,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // === 6. КЕРУВАННЯ ГУЧНІСТЮ ТА ДИНАМІЧНИМИ ІКОНКАМИ ===
+    // === 6. КЕРУВАННЯ ГУЧНІСТЮ ===
     if (volumeSlider) {
         function updateVolumeIcon(value) {
             const vol = parseInt(value, 10);
             if (!volumeIcon) return;
 
             if (vol === 0) {
-                volumeIcon.src = "assets/audio-speaker0.png";  // Спікер закреслений (0%)
+                volumeIcon.src = "assets/audio-speaker.png";
             } else if (vol > 0 && vol <= 50) {
-                volumeIcon.src = "assets/audio-speaker1.png"; // Тихо (1%-50%)
+                volumeIcon.src = "assets/audio-speaker1.png";
             } else {
-                volumeIcon.src = "assets/audio-speaker2.png"; // Гучно (51%-100%)
+                volumeIcon.src = "assets/audio-speaker2.png";
             }
-
-            // Робимо красивий червоний колір до бігунка
             volumeSlider.style.background = `linear-gradient(90deg, #ff4444 ${vol}%, rgba(255, 255, 255, 0.1) ${vol}%)`;
         }
 
@@ -340,7 +444,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === СТАРТ ДОДАТКУ ===
     updateSidebarPlaylists();
-    
-    // ВІДОБРАЖАЄМО ВСІ ТРЕКИ РАЗОМ ПРИ СТАРТІ СТОРІНКИ
     renderLibrary(songs);
 });
