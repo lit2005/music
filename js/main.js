@@ -1,14 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // === 1. БІБЛІОТЕКА ПІСЕНЬ (ФІНАЛЬНІ ПРАВИЛЬНІ ШЛЯХИ) ===
+    // === 1. БІБЛІОТЕКА ПІСЕНЬ ===
+   // === 1. БІБЛІОТЕКА ПІСЕНЬ ===
     const songs = [
-        { id: 0, title: "No Sleep", artist: "Kontraa", cover: "assets/cover1.jpg", file: "audio/track0.mp3", mood: "Енергія" },
-        { id: 1, title: "Berry Groovy", artist: "Giorgio Vitte", cover: "assets/cover2.jpg", file: "audio/track1.mp3", mood: "Релакс" },
-        { id: 2, title: "Вода | Афро-поп музика", artist: "контра", cover: "assets/cover3.jpg", file: "audio/track2.mp3", mood: "Фокус" },
-        { id: 3, title: "Хайп | Дрилл Музика", artist: "контра", cover: "assets/cover4.jpg", file: "audio/track3.mp3", mood: "Фокус" },
-        // Після перенесення файлів у папки проєкту, ці шляхи стануть активними:
-        { id: 4, title: "No Copyright Music", artist: "SigmaMusicArt", cover: "assets/17-00-18-274_200x200.png", file: "audio/sigmamusicart-no-copyright-music-537751.mp3", mood: "Енергія" },
-        { id: 5, title: "Acoustic Spring", artist: "Ikoliks", cover: "assets/12-50-38-402_200x200.jpg", file: "audio/ikoliks_aj-acoustic-spring-mothers-day-music-320427.mp3", mood: "Релакс" }
+        { id: 0, title: "No Sleep", artist: "Kontraa", cover: "assets/cover1.jpg", file: "audio/track1.mp3", mood: "Енергія" },
+        { id: 1, title: "Berry Groovy", artist: "Giorgio Vitte", cover: "assets/cover2.jpg", file: "audio/track2.mp3", mood: "Релакс" },
+        { id: 2, title: "Вода | Афро-поп музика", artist: "контра", cover: "assets/cover3.jpg", file: "audio/track3.mp3", mood: "Фокус" },
+        { id: 3, title: "Хайп | Дрилл Музика", artist: "контра", cover: "assets/cover4.jpg", file: "audio/track4.mp3", mood: "Фокус" },
+        { id: 4, title: "Ретро Радіо", artist: "контра", cover: "assets/cover5.jpg", file: "audio/track5.mp3", mood: "Релакс" }, // Додано track4
+        { id: 5, title: "Сейшн", artist: "контра", cover: "assets/cover6.jpg", file: "audio/track6.mp3", mood: "Енергія" }      // Додано trek5
     ];
 
     // Дані для карток розділу "Огляд"
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: "Жанри", icon: "🎸", color: "linear-gradient(135deg, #43e97b, #38f9d7)" }
     ];
 
+    // Списки треків у плейлістах
     let likedSongs = [];
     let customPlaylists = {};
 
@@ -39,9 +40,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const playlistSection = document.querySelector('.playlist-section');
     const btnNewPlaylist = document.querySelector('.btn-new-playlist');
 
+    // Контейнери верхньої панелі для правильного ховання
     const moodContainer = document.querySelector('.mood-pills') || document.querySelector('.pills-container') || moodPills[0]?.parentElement;
     const searchContainer = document.querySelector('.search-container') || searchInput?.parentElement;
 
+    // Кнопки бічного меню
     const navItems = document.querySelectorAll('.nav-item');
 
     const currentTrackTitle = document.getElementById('currentTrackTitle');
@@ -166,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // === УПРАВЛІННЯ SIDEBAR ===
+    // === УПРАВЛІННЯ SIDEBAR З ПРАВИЛЬНИМ ПРИХОВУВАННЯМ ===
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
@@ -178,10 +181,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (text.includes("Огляд")) {
                 if (heading) heading.innerText = "Огляд";
+                
+                // Ховаємо таблетки настрою
                 if (moodContainer) moodContainer.style.display = 'none';
+                
+                // Виправлено: Ховаємо верхній пошуковий контейнер (без помилок у коді)
                 if (searchContainer) searchContainer.style.display = 'none';
+                
                 renderExplore(); 
             } else {
+                // Повертаємо пошук та таблетки для інших сторінок
                 if (moodContainer) moodContainer.style.display = 'flex';
                 if (searchContainer) searchContainer.style.display = 'flex';
 
@@ -309,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return [...songs];
     }
 
-    // === 5. ІНТЕРАКТИВНІ ПЛЕЙЛІСТИ ===
+    // === 5. ІНТЕРАКТИВНІ ПЛЕЙЛІСТИ (З МОЖЛИВІСТЮ РЕДАГУВАННЯ ТА ВИДАЛЕННЯ) ===
     function updateSidebarPlaylists() {
         playlistSection.innerHTML = `
             <div class="playlist-item" id="likedPlaylistBtn">
@@ -321,13 +330,45 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.keys(customPlaylists).forEach(name => {
             const item = document.createElement('div');
             item.className = 'playlist-item';
+            item.style.position = 'relative'; // Для позиціонування кнопки видалення
+            
             item.innerHTML = `
-                <div class="playlist-title">${name}</div>
-                <div class="playlist-sub">Плейліст • ${customPlaylists[name].length} трек(ів)</div>
+                <div class="playlist-info-block" style="flex: 1; cursor: pointer;">
+                    <div class="playlist-title">${name}</div>
+                    <div class="playlist-sub">Плейліст • ${customPlaylists[name].length} трек(ів)</div>
+                </div>
+                <button class="delete-playlist-btn" data-name="${name}" title="Видалити плейліст" 
+                        style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; padding: 0 5px; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s;">
+                    ×
+                </button>
             `;
             
-            item.addEventListener('click', () => {
+            // Клік по плейлісту для перегляду
+            item.querySelector('.playlist-info-block').addEventListener('click', () => {
                 selectCustomPlaylist(name, item);
+            });
+
+            // Показуємо хрестик видалення при наведенні
+            item.addEventListener('mouseenter', () => {
+                const btn = item.querySelector('.delete-playlist-btn');
+                if (btn) btn.style.opacity = '1';
+            });
+            item.addEventListener('mouseleave', () => {
+                const btn = item.querySelector('.delete-playlist-btn');
+                if (btn) btn.style.opacity = '0';
+            });
+
+            // Видалення всього плейліста
+            item.querySelector('.delete-playlist-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm(`Ви впевнені, що хочете видалити плейліст "${name}"?`)) {
+                    delete customPlaylists[name];
+                    if (currentViewMode === `playlist-custom-${name}`) {
+                        currentViewMode = "all";
+                        renderLibrary(songs);
+                    }
+                    updateSidebarPlaylists();
+                }
             });
 
             playlistSection.appendChild(item);
@@ -367,12 +408,59 @@ document.addEventListener('DOMContentLoaded', () => {
         if (moodContainer) moodContainer.style.display = 'flex'; 
         if (searchContainer) searchContainer.style.display = 'flex';
 
+        // Додаємо кнопку швидкого додавання/видалення треків до заголовка
         const heading = document.querySelector('.glow-text');
-        if (heading) heading.innerText = name;
+        if (heading) {
+            heading.innerHTML = `
+                ${name} 
+                <button id="editPlaylistTracksBtn" style="font-size: 14px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px 12px; border-radius: 12px; margin-left: 15px; cursor: pointer;">
+                    ⚙ Редагувати треки
+                </button>
+            `;
+            
+            document.getElementById('editPlaylistTracksBtn').addEventListener('click', () => {
+                editPlaylistTracks(name, element);
+            });
+        }
 
         const ids = customPlaylists[name] || [];
         const list = songs.filter(s => ids.includes(s.id));
         renderLibrary(list);
+    }
+
+    // НОВА ФУНКЦІЯ: Редагування складу треків у вже створеному плейлісті
+    function editPlaylistTracks(name, element) {
+        let message = `Редагування плейліста "${name}"\n`;
+        message += "Введіть через кому НОВІ номери пісень (зі списку ваших улюблених):\n\n";
+        
+        const favoriteSongsList = songs.filter(s => likedSongs.includes(s.id));
+        if (favoriteSongsList.length === 0) {
+            alert("У вас немає треків в «Улюблене», щоб додати їх сюди.");
+            return;
+        }
+
+        favoriteSongsList.forEach((song, idx) => {
+            const isAlreadyIn = customPlaylists[name].includes(song.id) ? "[Вже додано] " : "";
+            message += `${idx + 1}. ${isAlreadyIn}${song.title} — ${song.artist}\n`;
+        });
+
+        const choices = prompt(message);
+        if (choices === null) return; // Якщо натиснули "Скасувати"
+
+        const selectedIds = [];
+        if (choices.trim() !== "") {
+            const parts = choices.split(',');
+            parts.forEach(p => {
+                const num = parseInt(p.trim(), 10) - 1;
+                if (!isNaN(num) && num >= 0 && num < favoriteSongsList.length) {
+                    selectedIds.push(favoriteSongsList[num].id);
+                }
+            });
+        }
+
+        customPlaylists[name] = selectedIds;
+        updateSidebarPlaylists();
+        selectCustomPlaylist(name, element); // Перезавантажуємо вигляд плейліста
     }
 
     if (btnNewPlaylist) {
@@ -423,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!volumeIcon) return;
 
             if (vol === 0) {
-                volumeIcon.src = "assets/audio-speaker.png";
+                volumeIcon.src = "assets/audio-speaker0.png";
             } else if (vol > 0 && vol <= 50) {
                 volumeIcon.src = "assets/audio-speaker1.png";
             } else {
