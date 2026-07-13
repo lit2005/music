@@ -1,16 +1,31 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // === 1. БІБЛІОТЕКА ПІСЕНЬ ===
-   // === 1. БІБЛІОТЕКА ПІСЕНЬ ===
+    // === 1. БІБЛІОТЕКА ПІСЕНЬ 
+
     const songs = [
         { id: 0, title: "No Sleep", artist: "Kontraa", cover: "assets/cover1.jpg", file: "audio/track1.mp3", mood: "Енергія" },
         { id: 1, title: "Berry Groovy", artist: "Giorgio Vitte", cover: "assets/cover2.jpg", file: "audio/track2.mp3", mood: "Релакс" },
         { id: 2, title: "Вода | Афро-поп музика", artist: "контра", cover: "assets/cover3.jpg", file: "audio/track3.mp3", mood: "Фокус" },
         { id: 3, title: "Хайп | Дрилл Музика", artist: "контра", cover: "assets/cover4.jpg", file: "audio/track4.mp3", mood: "Фокус" },
-        { id: 4, title: "Ретро Радіо", artist: "контра", cover: "assets/cover5.jpg", file: "audio/track5.mp3", mood: "Релакс" }, // Додано track4
-        { id: 5, title: "Сейшн", artist: "контра", cover: "assets/cover6.jpg", file: "audio/track6.mp3", mood: "Енергія" }      // Додано trek5
+        { id: 4, title: "Ретро Радіо", artist: "контра", cover: "assets/cover5.jpg", file: "audio/track5.mp3", mood: "Релакс" },
+        { id: 5, title: "Сейшн", artist: "контра", cover: "assets/cover6.jpg", file: "audio/track6.mp3", mood: "Енергія" },
+        
+        // Секція "Тобі сподобається" 
+        { id: 6, title: "The Mountain", artist: "Paul Yudin", cover: "assets/cover7.png", file: "audio/track7.mp3", mood: "Сум" }, 
+        { id: 7, title: "Paul Yudin Beats", artist: "Paul Yudin", cover: "assets/cover8.png", file: "audio/track8.mp3", mood: "Тренування" }, 
+        { id: 8, title: "Royalty Free Music", artist: "контра", cover: "assets/cover9.jpg", file: "audio/track9.mp3", mood: "Сум" }, 
+        { id: 9, title: "Neon Girl", artist: "Kontraa", cover: "assets/cover10.jpg", file: "audio/track10.mp3", mood: "У дорозі" },
+        { id: 10, title: "Red Explosion", artist: "контра", cover: "assets/cover11.jpg", file: "audio/track11.mp3", mood: "Вечірка" }, 
+        { id: 11, title: "New Wave Wave", artist: "Kontraa", cover: "assets/cover17.jpg", file: "audio/track17.mp3", mood: "Вечірка" }, 
+        
+        // Секція "Нові релізи"
+        { id: 12, title: "Crimson Clouds", artist: "Paul Yudin", cover: "assets/cover12.png", file: "audio/track12.mp3", mood: "Романтика" }, // Змінено на Романтика
+        { id: 13, title: "Dark Smoke", artist: "контра", cover: "assets/cover13.jpg", file: "audio/track13.mp3", mood: "Тренування" }, 
+        { id: 14, title: "Cyberpunk Alley", artist: "Kontraa", cover: "assets/cover14.jpeg", file: "audio/track14.mp3", mood: "У дорозі" }, 
+        { id: 15, title: "Moonlight Tunes", artist: "Giorgio Vitte", cover: "assets/cover15.jpeg", file: "audio/track15.mp3", mood: "Романтика" }, // Змінено на Романтика
+        { id: 16, title: "FASS Fast Track", artist: "FASS", cover: "assets/cover16.jpg", file: "audio/track16.mp3", mood: "Сон" }, 
+        { id: 17, title: "Midnight Drive", artist: "Giorgio Vitte", cover: "assets/cover18.jpg", file: "audio/track18.mp3", mood: "Сон" } 
     ];
-
     // Дані для карток розділу "Огляд"
     const exploreCategories = [
         { name: "Новинки", icon: "✨", color: "linear-gradient(135deg, #ff0055, #7000ff)" },
@@ -25,9 +40,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentViewMode = "all";
     let currentFilteredSongs = [...songs];
+    let currentPlayingList = [...songs]; // Список, з якого зараз грає музика
+    let currentSongIndex = -1;           // Індекс поточного треку в списку відтворення
 
-    // Елементи інтерфейсу
+    // Елементи інтерфейсу (Контейнери сіток)
     const musicGrid = document.querySelector('.music-grid');
+    const recommendedGrid = document.getElementById('recommendedGrid');
+    const newReleasesGrid = document.getElementById('newReleasesGrid');
+    const chartsGrid = document.getElementById('chartsGrid');
+
+    // Масив з усіма додатковими сітками
+    const extraGrids = [recommendedGrid, newReleasesGrid, chartsGrid];
+
     const playBtn = document.getElementById('mainPlayBtn');
     const playBtnImg = document.getElementById('playBtnImg');
     const repeatBtn = document.getElementById('repeatBtn');
@@ -40,7 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const playlistSection = document.querySelector('.playlist-section');
     const btnNewPlaylist = document.querySelector('.btn-new-playlist');
 
-    // Контейнери верхньої панелі для правильного ховання
+    // Кнопки навігації треків (⏮ та ⏭)
+    const prevBtn = document.querySelector('.player-controls button:first-child');
+    const nextBtn = document.querySelector('.player-controls button:nth-child(3)');
+
+    // Контейнери верхньої панелі
     const moodContainer = document.querySelector('.mood-pills') || document.querySelector('.pills-container') || moodPills[0]?.parentElement;
     const searchContainer = document.querySelector('.search-container') || searchInput?.parentElement;
 
@@ -56,20 +84,75 @@ document.addEventListener('DOMContentLoaded', () => {
     let isRepeatMode = false;
     let progressInterval;
 
-    // === 2. РЕНДЕР КАРТОК ПІСЕНЬ ===
-    function renderLibrary(list) {
-        if (!musicGrid) return;
-        musicGrid.removeAttribute('style'); 
-        musicGrid.innerHTML = '';
+    // Допоміжна функція для створення копії масиву з випадковим порядком
+    function shuffleArray(array) {
+        let arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    // Функція приховування або показу всіх додаткових блоків
+    function setExtraGridsVisibility(visible) {
+        extraGrids.forEach(grid => {
+            if (grid && grid.parentElement) {
+                grid.parentElement.style.display = visible ? 'block' : 'none';
+            }
+        });
+    }
+
+    // === ФУНКЦІЯ РЕНДЕРУ ВСІХ СЕКЦІЙ НА ГОЛОВНІЙ (РОЗПОДІЛ З УРАХУВАННЯМ НОВИХ ТРЕКІВ) ===
+    function renderAllHomeSections() {
+        // 1. СЛУХАТИ ЗНОВУ — перші 6 початкових треків (id 0-5)
+        renderLibrary(songs.slice(0, 6), musicGrid, true);
+        
+        // 2. ТОБІ СПОДОБАЄТЬСЯ — оновлено до 6 треків (id 6-11, включаючи track17)
+        renderLibrary(songs.slice(6, 12), recommendedGrid, true);
+        
+        // 3. НОВІ РЕЛІЗИ — оновлено до 6 треків (id 12-17, включаючи track18)
+        renderLibrary(songs.slice(12, 18), newReleasesGrid, true);
+        
+        // 4. СВІЖІ ЧАРТИ — показуємо перемішані всі треки
+        renderLibrary(shuffleArray(songs), chartsGrid, true);
+    }
+
+    // === 2. РЕНДЕР КАРТОК ПІСЕНЬ (З КАСТОМНИМ СКРОЛБАРОМ) ===
+    function renderLibrary(list, container = musicGrid, forceRowMode = false) {
+        if (!container) return;
+        container.removeAttribute('style'); 
+        container.innerHTML = '';
+
+        if (forceRowMode) {
+            container.style.display = 'flex';
+            container.style.flexDirection = 'row';
+            container.style.overflowX = 'scroll'; 
+            container.style.gap = '20px';
+            container.style.padding = '20px 0 15px 0'; 
+            container.style.whiteSpace = 'nowrap';
+            container.style.transform = 'rotateX(180deg)'; 
+            
+            container.style.scrollbarWidth = 'thin';
+            container.style.scrollbarColor = 'rgba(255, 255, 255, 0.2) transparent';
+        }
 
         if (list.length === 0) {
-            musicGrid.innerHTML = '<div style="color: #6b7280; grid-column: 1/-1; text-align: center; padding: 40px; font-size: 16px;">У цій секції ще немає треків</div>';
+            container.innerHTML = '<div style="color: #6b7280; grid-column: 1/-1; text-align: center; padding: 40px; font-size: 16px; transform: rotateX(180deg);">У цій секції ще немає треків</div>';
             return;
         }
 
         list.forEach((song, index) => {
             const card = document.createElement('div');
             card.className = `card ${index % 2 === 0 ? 'pink-glow' : 'teal-glow'}`;
+            
+            if (forceRowMode) {
+                card.style.flex = '0 0 220px';
+                card.style.maxWidth = '220px';
+                card.style.display = 'inline-block';
+                card.style.verticalAlign = 'top';
+                card.style.transform = 'rotateX(180deg)'; 
+            }
             
             const isLiked = likedSongs.includes(song.id);
 
@@ -80,8 +163,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="card-body-row">
                     <div class="card-body-text">
-                        <div class="song-name">${song.title}</div>
-                        <div class="song-desc">${song.artist}</div>
+                        <div class="song-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${song.title}</div>
+                        <div class="song-desc" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${song.artist}</div>
                     </div>
                     <button class="like-btn ${isLiked ? 'liked' : ''}" data-id="${song.id}" title="Додати в улюблене">
                         <img src="assets/love.png" alt="Like" class="like-icon">
@@ -92,13 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.like-btn')) return;
 
-                currentTrackTitle.innerText = song.title;
-                currentTrackArtist.innerText = song.artist;
-                currentTrackImg.src = song.cover;
-                currentAudio.src = song.file;
-                
-                if (progressFill) progressFill.style.width = '0%';
-                playTrack();
+                currentPlayingList = [...list];
+                currentSongIndex = index;
+
+                loadAndPlayTrack(song);
             });
 
             const likeBtn = card.querySelector('.like-btn');
@@ -119,8 +199,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            musicGrid.appendChild(card);
+            container.appendChild(card);
         });
+    }
+
+    // Функція завантаження метаданих треку в плеєр та його запуску
+    function loadAndPlayTrack(song) {
+        if (!song) return;
+        currentTrackTitle.innerText = song.title;
+        currentTrackArtist.innerText = song.artist;
+        currentTrackImg.src = song.cover;
+        currentAudio.src = song.file;
+        
+        if (progressFill) progressFill.style.width = '0%';
+        playTrack();
+    }
+
+    // Функції перемикання треків вперед та назад
+    function nextTrack() {
+        if (currentPlayingList.length === 0) return;
+        currentSongIndex++;
+        if (currentSongIndex >= currentPlayingList.length) {
+            currentSongIndex = 0; 
+        }
+        loadAndPlayTrack(currentPlayingList[currentSongIndex]);
+    }
+
+    // Слухачі для кнопок ⏮ та ⏭
+    if (nextBtn) nextBtn.addEventListener('click', nextTrack);
+    if (prevBtn) prevBtn.addEventListener('click', prevTrack);
+
+    function prevTrack() {
+        if (currentPlayingList.length === 0) return;
+        currentSongIndex--;
+        if (currentSongIndex < 0) {
+            currentSongIndex = currentPlayingList.length - 1; 
+        }
+        loadAndPlayTrack(currentPlayingList[currentSongIndex]);
     }
 
     // === РЕНДЕР СЕКЦІЇ "ОГЛЯД" ===
@@ -128,6 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!musicGrid) return;
         musicGrid.innerHTML = '';
         currentViewMode = "explore";
+
+        setExtraGridsVisibility(false);
 
         musicGrid.style.display = 'grid';
         musicGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(240px, 1fr))';
@@ -169,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // === УПРАВЛІННЯ SIDEBAR З ПРАВИЛЬНИМ ПРИХОВУВАННЯМ ===
+    // === УПРАВЛІННЯ SIDEBAR ===
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
@@ -181,16 +298,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (text.includes("Огляд")) {
                 if (heading) heading.innerText = "Огляд";
-                
-                // Ховаємо таблетки настрою
                 if (moodContainer) moodContainer.style.display = 'none';
-                
-                // Виправлено: Ховаємо верхній пошуковий контейнер (без помилок у коді)
                 if (searchContainer) searchContainer.style.display = 'none';
-                
                 renderExplore(); 
             } else {
-                // Повертаємо пошук та таблетки для інших сторінок
                 if (moodContainer) moodContainer.style.display = 'flex';
                 if (searchContainer) searchContainer.style.display = 'flex';
 
@@ -198,10 +309,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (heading) heading.innerText = "Слухати знову";
                     currentViewMode = "all";
                     currentFilteredSongs = [...songs];
-                    renderLibrary(songs);
+                    setExtraGridsVisibility(true); 
+                    renderAllHomeSections();
                 } else if (text.includes("Бібліотека")) {
                     if (heading) heading.innerText = "Твоя Бібліотека";
-                    renderLibrary(songs);
+                    setExtraGridsVisibility(false); 
+                    renderLibrary(songs, musicGrid, false);
                 }
             }
         });
@@ -241,8 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentAudio.currentTime = 0;
             playTrack();
         } else {
-            pauseTrack();
-            if (progressFill) progressFill.style.width = '0%';
+            nextTrack();
         }
     });
 
@@ -287,10 +399,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (selectedMood === "Гарний настрій") {
                 currentFilteredSongs = [...songs];
+                setExtraGridsVisibility(true); 
+                renderAllHomeSections();
             } else {
+                setExtraGridsVisibility(false); 
                 currentFilteredSongs = songs.filter(s => s.mood === selectedMood);
+                renderLibrary(currentFilteredSongs, musicGrid, false);
             }
-            renderLibrary(currentFilteredSongs);
         });
     });
 
@@ -303,7 +418,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const filtered = baseList.filter(s => 
                 s.title.toLowerCase().includes(term) || s.artist.toLowerCase().includes(term)
             );
-            renderLibrary(filtered);
+            
+            if (term.length > 0) {
+                setExtraGridsVisibility(false);
+                renderLibrary(filtered, musicGrid, false);
+            } else if (currentViewMode === "all" && document.querySelector('.pill.active')?.innerText.trim() === "Гарний настрій") {
+                setExtraGridsVisibility(true);
+                renderAllHomeSections();
+            } else {
+                renderLibrary(filtered, musicGrid, false);
+            }
         });
     }
 
@@ -318,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return [...songs];
     }
 
-    // === 5. ІНТЕРАКТИВНІ ПЛЕЙЛІСТИ (З МОЖЛИВІСТЮ РЕДАГУВАННЯ ТА ВИДАЛЕННЯ) ===
+    // === 5. ІНТЕРАКТИВНІ ПЛЕЙЛІСТИ ===
     function updateSidebarPlaylists() {
         playlistSection.innerHTML = `
             <div class="playlist-item" id="likedPlaylistBtn">
@@ -330,12 +454,12 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.keys(customPlaylists).forEach(name => {
             const item = document.createElement('div');
             item.className = 'playlist-item';
-            item.style.position = 'relative'; // Для позиціонування кнопки видалення
+            item.style.position = 'relative';
             
             item.innerHTML = `
                 <div class="playlist-info-block" style="flex: 1; cursor: pointer;">
                     <div class="playlist-title">${name}</div>
-                    <div class="playlist-sub">Плейліст • ${customPlaylists[name].length} трек(ів)</div>
+                    <div class="playlist-sub">Плейліст • ${customPlaylists[name].length} treki</div>
                 </div>
                 <button class="delete-playlist-btn" data-name="${name}" title="Видалити плейліст" 
                         style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; padding: 0 5px; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); opacity: 0; transition: opacity 0.2s;">
@@ -343,12 +467,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             `;
             
-            // Клік по плейлісту для перегляду
             item.querySelector('.playlist-info-block').addEventListener('click', () => {
                 selectCustomPlaylist(name, item);
             });
 
-            // Показуємо хрестик видалення при наведенні
             item.addEventListener('mouseenter', () => {
                 const btn = item.querySelector('.delete-playlist-btn');
                 if (btn) btn.style.opacity = '1';
@@ -358,14 +480,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (btn) btn.style.opacity = '0';
             });
 
-            // Видалення всього плейліста
             item.querySelector('.delete-playlist-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (confirm(`Ви впевнені, що хочете видалити плейліст "${name}"?`)) {
                     delete customPlaylists[name];
                     if (currentViewMode === `playlist-custom-${name}`) {
                         currentViewMode = "all";
-                        renderLibrary(songs);
+                        renderLibrary(songs, musicGrid, false);
                     }
                     updateSidebarPlaylists();
                 }
@@ -390,12 +511,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (moodContainer) moodContainer.style.display = 'flex'; 
         if (searchContainer) searchContainer.style.display = 'flex';
+        setExtraGridsVisibility(false); 
 
         const heading = document.querySelector('.glow-text');
         if (heading) heading.innerText = "Улюблене";
 
         const likedList = songs.filter(s => likedSongs.includes(s.id));
-        renderLibrary(likedList);
+        renderLibrary(likedList, musicGrid, false);
     }
 
     function selectCustomPlaylist(name, element) {
@@ -407,8 +529,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (moodContainer) moodContainer.style.display = 'flex'; 
         if (searchContainer) searchContainer.style.display = 'flex';
+        setExtraGridsVisibility(false); 
 
-        // Додаємо кнопку швидкого додавання/видалення треків до заголовка
         const heading = document.querySelector('.glow-text');
         if (heading) {
             heading.innerHTML = `
@@ -425,13 +547,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const ids = customPlaylists[name] || [];
         const list = songs.filter(s => ids.includes(s.id));
-        renderLibrary(list);
+        renderLibrary(list, musicGrid, false);
     }
 
-    // НОВА ФУНКЦІЯ: Редагування складу треків у вже створеному плейлісті
     function editPlaylistTracks(name, element) {
         let message = `Редагування плейліста "${name}"\n`;
-        message += "Введіть через кому НОВІ номери пісень (зі списку ваших улюблених):\n\n";
+        message += "Введіть через кому НОВІ номери пісень (зі списку ваших улюблиних):\n\n";
         
         const favoriteSongsList = songs.filter(s => likedSongs.includes(s.id));
         if (favoriteSongsList.length === 0) {
@@ -445,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const choices = prompt(message);
-        if (choices === null) return; // Якщо натиснули "Скасувати"
+        if (choices === null) return;
 
         const selectedIds = [];
         if (choices.trim() !== "") {
@@ -460,7 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         customPlaylists[name] = selectedIds;
         updateSidebarPlaylists();
-        selectCustomPlaylist(name, element); // Перезавантажуємо вигляд плейліста
+        selectCustomPlaylist(name, element);
     }
 
     if (btnNewPlaylist) {
@@ -532,5 +653,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === СТАРТ ДОДАТКУ ===
     updateSidebarPlaylists();
-    renderLibrary(songs);
+    renderAllHomeSections();
 });
