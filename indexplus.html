@@ -8,6 +8,9 @@
 </head>
 <body>
 
+    <!-- Кнопка мобільного меню (гамбургер) -->
+    <button class="menu-toggle">☰</button>
+
     <aside class="sidebar">
         <!-- === ОНОВЛЕНИЙ НОВИЙ ЛОГОТИП З ТЕКСТОМ === -->
         <div class="logo-container">
@@ -115,12 +118,23 @@
     </main>
 
     <footer class="player-bar">
+        <!-- Полоса прогресса сверху панели -->
         <div class="progress-container">
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill"></div>
             </div>
         </div>
 
+        <!-- Левая часть: Инфо о треке -->
+        <div class="player-info">
+            <img src="assets/cover1.jpg" class="current-track-img" id="currentTrackImg">
+            <div class="track-meta">
+                <div class="track-title" id="currentTrackTitle">Програвач порожній</div>
+                <div class="track-artist" id="currentTrackArtist">Оберіть трек</div>
+            </div>
+        </div>
+
+        <!-- Центральная часть: Кнопки управления -->
         <div class="player-controls">
             <button class="player-btn">⏮</button>
             <button id="mainPlayBtn" class="player-btn play-pause">
@@ -133,14 +147,7 @@
             </button>
         </div>
 
-        <div class="player-info">
-            <img src="assets/cover1.jpg" class="current-track-img" id="currentTrackImg">
-            <div class="track-meta">
-                <div class="track-title" id="currentTrackTitle">Програвач порожній</div>
-                <div class="track-artist" id="currentTrackArtist">Оберіть трек</div>
-            </div>
-        </div>
-
+        <!-- Правая часть: Управление громкостью -->
         <div class="volume-controls">
             <img src="assets/audio-speaker1.png" class="volume-icon" alt="Volume">
             <input type="range" class="volume-slider" min="0" max="100" value="80">

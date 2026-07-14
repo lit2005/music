@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     let likedSongs = JSON.parse(localStorage.getItem('likedSongs')) || [];
     let customPlaylists = JSON.parse(localStorage.getItem('customPlaylists')) || {};
-    let favoritePlaylists = JSON.parse(localStorage.getItem('favoritePlaylists')) || []; // Збережені готові плейлісти
+    let favoritePlaylists = JSON.parse(localStorage.getItem('favoritePlaylists')) || []; 
 
     let currentViewMode = "all";
     let currentFilteredSongs = [...songs];
@@ -309,14 +309,11 @@ document.addEventListener('DOMContentLoaded', () => {
             loadAndPlayTrack(foreignHits2026Songs[0]);
         });
 
-        // ==========================================
-        // ДОДАНО: Меню для кнопки Трьох крапок (•••)
-        // ==========================================
+        // Меню для кнопки Трьох крапок (•••)
         const promoDotsBtn = headerContainer.querySelector('#promoDotsBtn');
         promoDotsBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             
-            // Якщо меню вже відкрите — видаляємо його
             const oldMenu = document.getElementById('promoContextMenu');
             if (oldMenu) {
                 oldMenu.remove();
@@ -325,7 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const isAlreadyFavorite = favoritePlaylists.includes("Зарубіжні хіти 2026");
 
-            // Створюємо маленьке віконце меню
             const menu = document.createElement('div');
             menu.id = 'promoContextMenu';
             menu.style.position = 'absolute';
@@ -337,7 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
             menu.style.zIndex = '1000';
             menu.style.width = '260px';
             
-            // Позиціонування під кнопкою
             const rect = promoDotsBtn.getBoundingClientRect();
             menu.style.top = `${rect.bottom + window.scrollY + 10}px`;
             menu.style.left = `${rect.left + window.scrollX}px`;
@@ -353,7 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.body.appendChild(menu);
 
-            // Ефекти наведення
             const opt1 = menu.querySelector('#addAllToLiked');
             const opt2 = menu.querySelector('#toggleFavoritePlaylist');
             [opt1, opt2].forEach(opt => {
@@ -361,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 opt.addEventListener('mouseleave', () => opt.style.background = 'none');
             });
 
-            // Опція 1: Додати всі треки до улюблених
             opt1.addEventListener('click', () => {
                 foreignHits2026Songs.forEach(song => {
                     if (!likedSongs.includes(song.id)) {
@@ -370,11 +363,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 localStorage.setItem('likedSongs', JSON.stringify(likedSongs));
                 menu.remove();
-                renderPromoPlaylistView(); // Перемальовуємо, щоб оновити серця
+                renderPromoPlaylistView(); 
                 alert("Усі треки додано до вашого автоплейліста «Улюблене»!");
             });
 
-            // Опція 2: Додати/видалити плейліст з бічної панелі
             opt2.addEventListener('click', () => {
                 if (isAlreadyFavorite) {
                     favoritePlaylists = favoritePlaylists.filter(name => name !== "Зарубіжні хіти 2026");
@@ -383,11 +375,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 localStorage.setItem('favoritePlaylists', JSON.stringify(favoritePlaylists));
                 menu.remove();
-                updateSidebarPlaylists(); // Оновлюємо лівий сайдбар!
+                updateSidebarPlaylists(); 
             });
         });
 
-        // Закриваємо контекстне меню при кліку в будь-якому іншому місці
         document.addEventListener('click', () => {
             const menu = document.getElementById('promoContextMenu');
             if (menu) menu.remove();
@@ -441,17 +432,15 @@ document.addEventListener('DOMContentLoaded', () => {
             trackRow.addEventListener('mouseenter', () => trackRow.style.background = 'rgba(255,255,255,0.08)');
             trackRow.addEventListener('mouseleave', () => trackRow.style.background = 'rgba(255,255,255,0.03)');
             
-            // Клик по всей строке запускает плеер
             trackRow.addEventListener('click', () => {
                 currentPlayingList = [...foreignHits2026Songs];
                 currentSongIndex = idx;
                 loadAndPlayTrack(song);
             });
 
-            // Клик конкретно по лайку
             const promoLikeBtn = trackRow.querySelector('.promo-like-btn');
             promoLikeBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Не даем событию клика всплыть до trackRow
+                e.stopPropagation(); 
                 
                 const songId = song.id;
                 const likeImg = promoLikeBtn.querySelector('img');
@@ -477,32 +466,128 @@ document.addEventListener('DOMContentLoaded', () => {
         musicGrid.appendChild(tracksListContainer);
     }
 
+    // ==========================================
+    // ОНОВЛЕНА ЛОГІКА КЕРУВАННЯ ПЛЕЄРОМ
+    // ==========================================
+
     function loadAndPlayTrack(song) {
         if (!song) return;
+        
         currentTrackTitle.innerText = song.title;
         currentTrackArtist.innerText = song.artist;
         currentTrackImg.src = song.cover;
+        
         currentAudio.src = song.file;
         if (progressFill) progressFill.style.width = '0%';
+        
         playTrack();
+    }
+
+    function playTrack() {
+        if (!currentAudio.src) return;
+        const playerBar = document.querySelector('.player-bar');
+        if (playerBar) playerBar.classList.add('active');
+
+        currentAudio.play().then(() => {
+            isPlaying = true;
+            if (playBtnImg) playBtnImg.src = 'assets/pause.png';
+            clearInterval(progressInterval);
+            progressInterval = setInterval(updateProgress, 250); // Частіший апдейт для плавності
+        }).catch(err => console.error("Аудіофайл не знайдено або відхилено браузером:", err));
+    }
+
+    function pauseTrack() {
+        isPlaying = false;
+        if (playBtnImg) playBtnImg.src = 'assets/play.png';
+        currentAudio.pause();
+        clearInterval(progressInterval);
+    }
+
+    function togglePlay() {
+        if (isPlaying) pauseTrack(); else playTrack();
     }
 
     function nextTrack() {
         if (currentPlayingList.length === 0) return;
-        currentSongIndex++;
-        if (currentSongIndex >= currentPlayingList.length) currentSongIndex = 0; 
+        currentSongIndex = (currentSongIndex + 1) % currentPlayingList.length;
         loadAndPlayTrack(currentPlayingList[currentSongIndex]);
     }
 
     function prevTrack() {
         if (currentPlayingList.length === 0) return;
-        currentSongIndex--;
-        if (currentSongIndex < 0) currentSongIndex = currentPlayingList.length - 1; 
+        currentSongIndex = (currentSongIndex - 1 + currentPlayingList.length) % currentPlayingList.length;
         loadAndPlayTrack(currentPlayingList[currentSongIndex]);
     }
 
+    function updateProgress() {
+        if (currentAudio.duration && progressFill) {
+            const percent = (currentAudio.currentTime / currentAudio.duration) * 100;
+            progressFill.style.width = percent + '%';
+        }
+    }
+
+    // Керування гучністю
+    if (volumeSlider) {
+        function updateVolumeIcon(value) {
+            const vol = parseInt(value, 10);
+            if (!volumeIcon) return;
+            if (vol === 0) {
+                volumeIcon.src = "assets/audio-speaker0.png";
+            } else if (vol > 0 && vol <= 50) {
+                volumeIcon.src = "assets/audio-speaker1.png";
+            } else {
+                volumeIcon.src = "assets/audio-speaker2.png";
+            }
+            volumeSlider.style.background = `linear-gradient(90deg, #ff4444 ${vol}%, rgba(255, 255, 255, 0.1) ${vol}%)`;
+        }
+
+        currentAudio.volume = volumeSlider.value / 100;
+        updateVolumeIcon(volumeSlider.value);
+
+        volumeSlider.addEventListener('input', (e) => {
+            const currentVal = e.target.value;
+            currentAudio.volume = currentVal / 100;
+            updateVolumeIcon(currentVal);
+        });
+    }
+
+    // Слухачі для керування плеєром
+    if (playBtn) playBtn.addEventListener('click', togglePlay);
     if (nextBtn) nextBtn.addEventListener('click', nextTrack);
     if (prevBtn) prevBtn.addEventListener('click', prevTrack);
+
+    if (repeatBtn) {
+        repeatBtn.addEventListener('click', () => {
+            isRepeatMode = !isRepeatMode;
+            repeatBtn.classList.toggle('repeat-active', isRepeatMode);
+        });
+    }
+
+    if (progressContainer) {
+        progressContainer.addEventListener('click', (e) => {
+            if (!currentAudio.src || !currentAudio.duration) return;
+            const width = progressContainer.clientWidth;
+            const clickPercent = e.offsetX / width;
+            currentAudio.currentTime = clickPercent * currentAudio.duration;
+            if (progressFill) progressFill.style.width = (clickPercent * 100) + '%';
+            if (!isPlaying) playTrack();
+        });
+    }
+
+    currentAudio.addEventListener('ended', () => {
+        if (isRepeatMode) {
+            currentAudio.currentTime = 0;
+            playTrack();
+        } else {
+            nextTrack();
+        }
+    });
+
+    currentAudio.addEventListener('timeupdate', updateProgress);
+
+    // ==========================================
+    // КАТЕГОРІЇ, НАСТРОЇ, ПОШУК ТА НАВІГАЦІЯ
+    // ==========================================
 
     function renderExplore() {
         if (!musicGrid) return;
@@ -641,64 +726,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    function playTrack() {
-        if (!currentAudio.src) return;
-        const playerBar = document.querySelector('.player-bar');
-        if (playerBar) playerBar.classList.add('active');
-
-        currentAudio.play().then(() => {
-            isPlaying = true;
-            if (playBtnImg) playBtnImg.src = 'assets/pause.png';
-            clearInterval(progressInterval);
-            progressInterval = setInterval(updateProgress, 500);
-        }).catch(err => console.log("Аудіофайл не знайдено:", err));
-    }
-
-    function pauseTrack() {
-        isPlaying = false;
-        if (playBtnImg) playBtnImg.src = 'assets/play.png';
-        currentAudio.pause();
-        clearInterval(progressInterval);
-    }
-
-    function updateProgress() {
-        if (currentAudio.duration && progressFill) {
-            const percent = (currentAudio.currentTime / currentAudio.duration) * 100;
-            progressFill.style.width = percent + '%';
-        }
-    }
-
-    currentAudio.addEventListener('ended', () => {
-        if (isRepeatMode) {
-            currentAudio.currentTime = 0;
-            playTrack();
-        } else {
-            nextTrack();
-        }
-    });
-
-    playBtn.addEventListener('click', () => {
-        if (isPlaying) pauseTrack(); else playTrack();
-    });
-
-    if (repeatBtn) {
-        repeatBtn.addEventListener('click', () => {
-            isRepeatMode = !isRepeatMode;
-            repeatBtn.classList.toggle('repeat-active', isRepeatMode);
-        });
-    }
-
-    if (progressContainer) {
-        progressContainer.addEventListener('click', (e) => {
-            if (!currentAudio.src || !currentAudio.duration) return;
-            const width = progressContainer.clientWidth;
-            const clickPercent = e.offsetX / width;
-            currentAudio.currentTime = clickPercent * currentAudio.duration;
-            if (progressFill) progressFill.style.width = (clickPercent * 100) + '%';
-            if (!isPlaying) playTrack();
-        });
-    }
-
     moodPills.forEach(pill => {
         pill.addEventListener('click', () => {
             currentViewMode = "all";
@@ -768,7 +795,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        // Відображаємо додані в обране промо-плейлісти
         favoritePlaylists.forEach(plName => {
             const item = document.createElement('div');
             item.className = 'playlist-item';
@@ -813,7 +839,6 @@ document.addEventListener('DOMContentLoaded', () => {
             playlistSection.appendChild(item);
         });
 
-        // Відображаємо створені користувачем кастомні плейлісти
         Object.keys(customPlaylists).forEach(name => {
             const item = document.createElement('div');
             item.className = 'playlist-item';
@@ -990,28 +1015,48 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (volumeSlider) {
-        function updateVolumeIcon(value) {
-            const vol = parseInt(value, 10);
-            if (!volumeIcon) return;
-            if (vol === 0) {
-                volumeIcon.src = "assets/audio-speaker0.png";
-            } else if (vol > 0 && vol <= 50) {
-                volumeIcon.src = "assets/audio-speaker1.png";
-            } else {
-                volumeIcon.src = "assets/audio-speaker2.png";
-            }
-            volumeSlider.style.background = `linear-gradient(90deg, #ff4444 ${vol}%, rgba(255, 255, 255, 0.1) ${vol}%)`;
-        }
+    // ==================================================
+    // Кнопка закриття нижнього плеєра (панелі)
+    // ==================================================
+    const playerBar = document.querySelector('.player-bar');
+    if (playerBar) {
+        const closePlayerBtn = document.createElement('button');
+        closePlayerBtn.id = 'closePlayerBtn';
+        closePlayerBtn.innerText = '✕';
+        closePlayerBtn.title = 'Прибрати плеєр';
+        closePlayerBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 22px;
+            cursor: pointer;
+            margin-left: 25px;
+            transition: color 0.2s, transform 0.2s;
+            line-height: 1;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        `;
 
-        currentAudio.volume = volumeSlider.value / 100;
-        updateVolumeIcon(volumeSlider.value);
-
-        volumeSlider.addEventListener('input', (e) => {
-            const currentVal = e.target.value;
-            currentAudio.volume = currentVal / 100;
-            updateVolumeIcon(currentVal);
+        closePlayerBtn.addEventListener('mouseenter', () => {
+            closePlayerBtn.style.color = '#ff4444';
+            closePlayerBtn.style.transform = 'scale(1.2)';
         });
+        closePlayerBtn.addEventListener('mouseleave', () => {
+            closePlayerBtn.style.color = 'rgba(255, 255, 255, 0.5)';
+            closePlayerBtn.style.transform = 'scale(1)';
+        });
+
+        closePlayerBtn.addEventListener('click', () => {
+            pauseTrack();                    // Зупиняємо музику
+            currentAudio.src = '';           // Очищаємо аудіофайл
+            playerBar.classList.remove('active'); // Ховаємо сам плеєр знизу
+        });
+
+        // Додаємо кнопку праворуч (після повзунка гучності)
+        playerBar.appendChild(closePlayerBtn);
     }
 
     updateSidebarPlaylists();
