@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // === 1. БІБЛІОТЕКА ПІСЕНЬ ===
+    // === 1. БІБЛІОТЕКА ПІСЕНЬ ТА ВІДЕО ===
     const songs = [
         { id: 0, title: "No Sleep", artist: "Kontraa", cover: "assets/cover1.jpg", file: "audio/track1.mp3", mood: "Енергія" },
         { id: 1, title: "Berry Groovy", artist: "Giorgio Vitte", cover: "assets/cover2.jpg", file: "audio/track2.mp3", mood: "Релакс" },
@@ -26,6 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 17, title: "Midnight Drive", artist: "Giorgio Vitte", cover: "assets/cover18.jpg", file: "audio/track18.mp3", mood: "Сон" } 
     ];
 
+    // База відеороликів для пошуку та відтворення
+    const videos = [
+        { id: 0, title: "Giorgio Vitte - Berry Groovy (Official Video)", cover: "assets/cover2.jpg", views: "12K", date: "3 тижні тому", ytId: "dQw4w9WgXcQ" },
+        { id: 1, title: "Paul Yudin - Crimson Clouds (Lyric Video)", cover: "assets/cover12.png", views: "45K", date: "2 місяці тому", ytId: "dQw4w9WgXcQ" },
+        { id: 2, title: "Kontraa - Cyberpunk Alley (Visualizer)", cover: "assets/cover14.jpeg", views: "8K", date: "1 день тому", ytId: "dQw4w9WgXcQ" }
+    ];
+
     const foreignHits2026Songs = [
         songs[0], songs[1], songs[6], songs[7], songs[9], songs[14], songs[15]
     ];
@@ -48,23 +55,31 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: "Вечеринка", color: "#a855f7" }, { name: "Поп", color: "#e879f9" }, { name: "Фолк и акустика", color: "#16a34a" }
     ];
 
-    // ==========================================
-    // Зчитування стану з localStorage
-    // ==========================================
+    // === СТАН З LOCALSTORAGE ===
     let likedSongs = JSON.parse(localStorage.getItem('likedSongs')) || [];
     let customPlaylists = JSON.parse(localStorage.getItem('customPlaylists')) || {};
     let favoritePlaylists = JSON.parse(localStorage.getItem('favoritePlaylists')) || []; 
+    
+    // ДИНАМІЧНИЙ СПИСОК ДОДАНИХ КОРИСТУВАЧЕМ ТРЕКІВ
+    let userAddedSongs = JSON.parse(localStorage.getItem('userAddedSongs')) || [];
+    let allSongs = [...songs, ...userAddedSongs]; // Об'єднаний масив для використання у плеєрі та пошуку
 
     let currentViewMode = "all";
-    let currentFilteredSongs = [...songs];
-    let currentPlayingList = [...songs]; 
+    let currentFilteredSongs = [...allSongs];
+    let currentPlayingList = [...allSongs]; 
     let currentSongIndex = -1;           
 
     // Елементи інтерфейсу
+    const musicScreen = document.getElementById('music-screen');
+    const liveScreen = document.getElementById('live-screen');
+    
+    let videoScreen = null;
+
     const musicGrid = document.querySelector('.music-grid');
     const recommendedGrid = document.getElementById('recommendedGrid');
     const newReleasesGrid = document.getElementById('newReleasesGrid');
     const chartsGrid = document.getElementById('chartsGrid');
+    const mainContent = document.querySelector('.main-content') || document.body;
 
     const extraGrids = [recommendedGrid, newReleasesGrid, chartsGrid];
 
@@ -97,6 +112,196 @@ document.addEventListener('DOMContentLoaded', () => {
     let isRepeatMode = false;
     let progressInterval;
 
+    // Стан для фонового YouTube плеєра
+    let isYTAudioPlaying = false;
+    let ytProgressInterval;
+
+    // === ДИНАМІЧНІ ЗМІННІ ТАЙМЕРА СНУ ===
+    let sleepTimerInterval = null;
+    let sleepTimeRemaining = 0; // в секундах
+
+    // === КЕРУВАННЯ ВІДЕО СТОРІНКОЮ ===
+    function getOrCreateVideoScreen() {
+        videoScreen = document.getElementById('video-screen');
+        if (!videoScreen) {
+            videoScreen = document.createElement('div');
+            videoScreen.id = 'video-screen';
+            videoScreen.style.cssText = `
+                display: none;
+                width: 100%;
+                margin-top: 20px;
+                font-family: sans-serif;
+            `;
+
+            // Додаємо пошуковий рядок для відео контенту
+            const videoSearchWrapper = document.createElement('div');
+            videoSearchWrapper.style.cssText = `
+                margin-bottom: 25px;
+                display: flex;
+                width: 100%;
+                max-width: 450px;
+            `;
+            videoSearchWrapper.innerHTML = `
+                <input type="text" id="videoSearchInput" placeholder="Пошук відео..." style="
+                    width: 100%;
+                    padding: 12px 20px;
+                    background: #181818;
+                    border: 1px solid rgba(255,255,255,0.15);
+                    border-radius: 25px;
+                    color: white;
+                    font-size: 14px;
+                    outline: none;
+                    transition: border-color 0.2s;
+                " />
+            `;
+            videoScreen.appendChild(videoSearchWrapper);
+
+            // Контейнер для карток відео
+            const videoGrid = document.createElement('div');
+            videoGrid.id = 'videoGridContainer';
+            videoGrid.style.cssText = `
+                display: grid; 
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+                gap: 20px;
+            `;
+            videoScreen.appendChild(videoGrid);
+
+            mainContent.appendChild(videoScreen);
+
+            // Функція динамічного рендерингу відео
+            function renderVideoList(filteredVideos) {
+                videoGrid.innerHTML = '';
+                if (filteredVideos.length === 0) {
+                    videoGrid.innerHTML = '<div style="color: #6b7280; grid-column: 1/-1; text-align: center; padding: 40px;">Нічого не знайдено за вашим запитом</div>';
+                    return;
+                }
+
+                filteredVideos.forEach(vid => {
+                    const videoCard = document.createElement('div');
+                    videoCard.style.cssText = `
+                        background: #181818; 
+                        border-radius: 8px; 
+                        overflow: hidden; 
+                        cursor: pointer;
+                        transition: transform 0.2s, box-shadow 0.2s;
+                    `;
+
+                    videoCard.innerHTML = `
+                        <div class="video-img-wrapper" style="position: relative; height: 160px; background: linear-gradient(135deg, #121212, #282828); display: flex; align-items: center; justify-content: center;">
+                            <img src="${vid.cover}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;" />
+                            <div style="position: absolute; background: rgba(0,0,0,0.7); padding: 12px 16px; border-radius: 50%; color: white; font-size: 20px; display: flex; align-items: center; justify-content: center; width: 50px; height: 50px;">▶</div>
+                        </div>
+                        <div style="padding: 12px;">
+                            <h4 style="color: white; margin: 0 0 5px 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${vid.title}">${vid.title}</h4>
+                            <p style="color: #9ca3af; margin: 0; font-size: 12px;">${vid.date} • ${vid.views} переглядів</p>
+                        </div>
+                    `;
+
+                    videoCard.addEventListener('mouseenter', () => {
+                        videoCard.style.transform = 'translateY(-4px)';
+                        videoCard.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
+                    });
+                    videoCard.addEventListener('mouseleave', () => {
+                        videoCard.style.transform = 'translateY(0)';
+                        videoCard.style.boxShadow = 'none';
+                    });
+
+                    // Запуск відео при кліку
+                    videoCard.addEventListener('click', () => {
+                        openVideoModal(vid);
+                    });
+
+                    videoGrid.appendChild(videoCard);
+                });
+            }
+
+            // Початковий рендер усіх відео
+            renderVideoList(videos);
+
+            // Слухач для пошуку відео
+            const vSearchInput = videoSearchWrapper.querySelector('#videoSearchInput');
+            vSearchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                const matched = videos.filter(v => v.title.toLowerCase().includes(query));
+                renderVideoList(matched);
+            });
+
+            vSearchInput.addEventListener('focus', () => {
+                vSearchInput.style.borderColor = '#ff4444';
+            });
+            vSearchInput.addEventListener('blur', () => {
+                vSearchInput.style.borderColor = 'rgba(255,255,255,0.15)';
+            });
+        }
+        return videoScreen;
+    }
+
+    // Спливаюче вікно програвача відео (Modal Video Player)
+    function openVideoModal(video) {
+        pauseTrack(); // Ставимо фонову музику на паузу перед відтворенням відео
+
+        const modal = document.createElement('div');
+        modal.id = 'videoPlayerModal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+
+        modal.innerHTML = `
+            <div style="position: relative; width: 90%; max-width: 820px; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(255, 68, 68, 0.25);">
+                <button id="closeVideoModalBtn" style="
+                    position: absolute;
+                    top: 15px; right: 15px;
+                    background: rgba(0,0,0,0.6);
+                    border: none;
+                    color: white;
+                    font-size: 22px;
+                    cursor: pointer;
+                    width: 40px; height: 40px;
+                    border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: background 0.2s, transform 0.2s;
+                    z-index: 10;
+                ">✕</button>
+                <iframe src="https://www.youtube.com/embed/${video.ytId}?autoplay=1" 
+                        title="${video.title}" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen 
+                        style="width: 100%; height: 100%;"></iframe>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        setTimeout(() => modal.style.opacity = '1', 10);
+
+        const closeBtn = modal.querySelector('#closeVideoModalBtn');
+        const closeModal = () => {
+            modal.style.opacity = '0';
+            setTimeout(() => modal.remove(), 300);
+        };
+
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+    }
+
+    function toggleVideoScreenVisibility(show) {
+        const vs = getOrCreateVideoScreen();
+        if (vs) {
+            vs.style.display = show ? 'block' : 'none';
+        }
+    }
+
     function shuffleArray(array) {
         let arr = [...array];
         for (let i = arr.length - 1; i > 0; i--) {
@@ -128,17 +333,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (forceRowMode) {
             container.style.display = 'flex';
             container.style.flexDirection = 'row';
-            container.style.overflowX = 'scroll'; 
+            container.style.overflowX = 'auto'; 
             container.style.gap = '20px';
             container.style.padding = '20px 0 15px 0'; 
             container.style.whiteSpace = 'nowrap';
-            container.style.transform = 'rotateX(180deg)'; 
             container.style.scrollbarWidth = 'thin';
             container.style.scrollbarColor = 'rgba(255, 255, 255, 0.2) transparent';
         }
 
         if (list.length === 0) {
-            container.innerHTML = '<div style="color: #6b7280; grid-column: 1/-1; text-align: center; padding: 40px; font-size: 16px; transform: rotateX(180deg);">У цій секції ще немає треків</div>';
+            container.innerHTML = '<div style="color: #6b7280; grid-column: 1/-1; text-align: center; padding: 40px; font-size: 16px;">У цій секції ще немає треків</div>';
             return;
         }
 
@@ -151,15 +355,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.style.maxWidth = '220px';
                 card.style.display = 'inline-block';
                 card.style.verticalAlign = 'top';
-                card.style.transform = 'rotateX(180deg)'; 
             }
             
             const isLiked = likedSongs.includes(song.id);
+            const isUserAdded = userAddedSongs.some(s => s.id === song.id);
 
             card.innerHTML = `
                 <div class="img-wrapper">
                     <img src="${song.cover}" class="card-img" alt="${song.title}" onerror="this.src='https://via.placeholder.com/220x220/0d1121/ffffff?text=Music'">
                     <div class="play-overlay">▶</div>
+                    ${isUserAdded ? `
+                        <button class="delete-custom-track-btn" data-id="${song.id}" title="Видалити трек" style="
+                            position: absolute;
+                            top: 10px;
+                            left: 10px;
+                            background: rgba(239, 68, 68, 0.9);
+                            border: none;
+                            color: white;
+                            width: 28px;
+                            height: 28px;
+                            border-radius: 50%;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-weight: bold;
+                            font-size: 14px;
+                            z-index: 5;
+                            transition: transform 0.2s;
+                        ">×</button>
+                    ` : ''}
                 </div>
                 <div class="card-body-row">
                     <div class="card-body-text">
@@ -173,11 +398,41 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             card.addEventListener('click', (e) => {
-                if (e.target.closest('.like-btn')) return;
+                if (e.target.closest('.like-btn') || e.target.closest('.delete-custom-track-btn')) return;
                 currentPlayingList = [...list];
                 currentSongIndex = index;
                 loadAndPlayTrack(song);
             });
+
+            // Видалення кастомних треків користувача
+            if (isUserAdded) {
+                const delBtn = card.querySelector('.delete-custom-track-btn');
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Ви впевнені, що хочете остаточно видалити трек "${song.title}"?`)) {
+                        userAddedSongs = userAddedSongs.filter(s => s.id !== song.id);
+                        localStorage.setItem('userAddedSongs', JSON.stringify(userAddedSongs));
+                        
+                        // Зачистка з улюблених
+                        likedSongs = likedSongs.filter(id => id !== song.id);
+                        localStorage.setItem('likedSongs', JSON.stringify(likedSongs));
+                        
+                        // Зачистка з кастомних плейлістів
+                        Object.keys(customPlaylists).forEach(name => {
+                            customPlaylists[name] = customPlaylists[name].filter(id => id !== song.id);
+                        });
+                        localStorage.setItem('customPlaylists', JSON.stringify(customPlaylists));
+
+                        allSongs = [...songs, ...userAddedSongs];
+                        
+                        if (currentViewMode === 'library') {
+                            renderLibrary(allSongs, musicGrid, false);
+                        } else {
+                            showView(currentViewMode);
+                        }
+                    }
+                });
+            }
 
             const likeBtn = card.querySelector('.like-btn');
             likeBtn.addEventListener('click', (e) => {
@@ -211,10 +466,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const oldBanner = document.getElementById('promoPlaylistBanner');
         if (oldBanner) oldBanner.remove();
 
-        renderLibrary(songs.slice(0, 6), musicGrid, true);
-        renderLibrary(songs.slice(6, 12), recommendedGrid, true);
-        renderLibrary(songs.slice(12, 18), newReleasesGrid, true);
-        renderLibrary(shuffleArray(songs), chartsGrid, true);
+        renderLibrary(allSongs.slice(0, 6), musicGrid, true);
+        renderLibrary(allSongs.slice(6, 12), recommendedGrid, true);
+        renderLibrary(allSongs.slice(12, 18), newReleasesGrid, true);
+        renderLibrary(shuffleArray(allSongs), chartsGrid, true);
 
         if (chartsGrid && chartsGrid.parentElement) {
             const bannerContainer = document.createElement('div');
@@ -256,6 +511,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         currentViewMode = "promo-playlist";
         setExtraGridsVisibility(false);
+        toggleVideoScreenVisibility(false); 
+        if (musicScreen) musicScreen.style.display = 'block';
+        if (liveScreen) liveScreen.style.display = 'none';
         if (moodContainer) moodContainer.style.display = 'none';
 
         const heading = document.querySelector('.glow-text');
@@ -299,7 +557,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         musicGrid.appendChild(headerContainer);
 
-        // Кнопка відтворення всього плейліста
         const playPlaylistBtn = headerContainer.querySelector('#playPromoPlaylistBtn');
         playPlaylistBtn.addEventListener('mouseenter', () => playPlaylistBtn.style.background = '#1ed760');
         playPlaylistBtn.addEventListener('mouseleave', () => playPlaylistBtn.style.background = '#1db954');
@@ -309,7 +566,6 @@ document.addEventListener('DOMContentLoaded', () => {
             loadAndPlayTrack(foreignHits2026Songs[0]);
         });
 
-        // Меню для кнопки Трьох крапок (•••)
         const promoDotsBtn = headerContainer.querySelector('#promoDotsBtn');
         promoDotsBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -466,41 +722,92 @@ document.addEventListener('DOMContentLoaded', () => {
         musicGrid.appendChild(tracksListContainer);
     }
 
-    // ==========================================
-    // ОНОВЛЕНА ЛОГІКА КЕРУВАННЯ ПЛЕЄРОМ
-    // ==========================================
-
+    // === 3. КЕРУВАННЯ ПЛЕЄРОМ ===
     function loadAndPlayTrack(song) {
         if (!song) return;
         
+        // Зберігаємо ID поточно відтворюваної пісні
+        localStorage.setItem('lastPlayedSongId', song.id);
+
         currentTrackTitle.innerText = song.title;
         currentTrackArtist.innerText = song.artist;
         currentTrackImg.src = song.cover;
-        
-        currentAudio.src = song.file;
+
+        // Повний скид та пауза обох потоків
+        currentAudio.pause();
+        if (window.ytAudioPlayer && typeof window.ytAudioPlayer.pauseVideo === 'function') {
+            window.ytAudioPlayer.pauseVideo();
+        }
+        clearInterval(progressInterval);
+        clearInterval(ytProgressInterval);
+
         if (progressFill) progressFill.style.width = '0%';
-        
-        playTrack();
+
+        // Перевіряємо, чи трек є відео-джерелом з YouTube
+        if (song.ytId) {
+            isYTAudioPlaying = true;
+            if (window.ytAudioPlayer && typeof window.ytAudioPlayer.loadVideoById === 'function') {
+                window.ytAudioPlayer.loadVideoById(song.ytId);
+                
+                // Передаємо поточну гучність на новий плеєр
+                if (volumeSlider) {
+                    window.ytAudioPlayer.setVolume(volumeSlider.value);
+                }
+                
+                isPlaying = true;
+                if (playBtnImg) playBtnImg.src = 'assets/pause.png';
+                
+                const playerBar = document.querySelector('.player-bar');
+                if (playerBar) playerBar.classList.add('active');
+
+                ytProgressInterval = setInterval(updateYTProgress, 250);
+            } else {
+                alert("YouTube API завантажується, спробуйте знову за секунду.");
+            }
+        } else {
+            isYTAudioPlaying = false;
+            currentAudio.src = song.file;
+            playTrack();
+        }
     }
 
     function playTrack() {
-        if (!currentAudio.src) return;
         const playerBar = document.querySelector('.player-bar');
         if (playerBar) playerBar.classList.add('active');
 
+        if (isYTAudioPlaying) {
+            if (window.ytAudioPlayer && typeof window.ytAudioPlayer.playVideo === 'function') {
+                window.ytAudioPlayer.playVideo();
+                isPlaying = true;
+                if (playBtnImg) playBtnImg.src = 'assets/pause.png';
+                clearInterval(ytProgressInterval);
+                ytProgressInterval = setInterval(updateYTProgress, 250);
+            }
+            return;
+        }
+
+        if (!currentAudio.src) return;
         currentAudio.play().then(() => {
             isPlaying = true;
             if (playBtnImg) playBtnImg.src = 'assets/pause.png';
             clearInterval(progressInterval);
-            progressInterval = setInterval(updateProgress, 250); // Частіший апдейт для плавності
-        }).catch(err => console.error("Аудіофайл не знайдено або відхилено браузером:", err));
+            progressInterval = setInterval(updateProgress, 250); 
+        }).catch(err => console.error("Аудіофайл не знайдено:", err));
     }
 
     function pauseTrack() {
         isPlaying = false;
         if (playBtnImg) playBtnImg.src = 'assets/play.png';
-        currentAudio.pause();
-        clearInterval(progressInterval);
+
+        if (isYTAudioPlaying) {
+            if (window.ytAudioPlayer && typeof window.ytAudioPlayer.pauseVideo === 'function') {
+                window.ytAudioPlayer.pauseVideo();
+            }
+            clearInterval(ytProgressInterval);
+        } else {
+            currentAudio.pause();
+            clearInterval(progressInterval);
+        }
     }
 
     function togglePlay() {
@@ -526,6 +833,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Прогрес бару для YouTube аудіо
+    function updateYTProgress() {
+        if (window.ytAudioPlayer && typeof window.ytAudioPlayer.getDuration === 'function') {
+            const duration = window.ytAudioPlayer.getDuration();
+            const current = window.ytAudioPlayer.getCurrentTime();
+            if (duration && progressFill) {
+                const percent = (current / duration) * 100;
+                progressFill.style.width = percent + '%';
+            }
+        }
+    }
+
+    // Слухач за завершенням треку з YouTube (викликається глобально)
+    window.handleYTAudioStateChange = (event) => {
+        if (event.data === 0) { // 0 = YT.PlayerState.ENDED
+            if (isRepeatMode) {
+                if (window.ytAudioPlayer && typeof window.ytAudioPlayer.seekTo === 'function') {
+                    window.ytAudioPlayer.seekTo(0, true);
+                    window.ytAudioPlayer.playVideo();
+                }
+            } else {
+                nextTrack();
+            }
+        }
+    };
+
     // Керування гучністю
     if (volumeSlider) {
         function updateVolumeIcon(value) {
@@ -547,6 +880,12 @@ document.addEventListener('DOMContentLoaded', () => {
         volumeSlider.addEventListener('input', (e) => {
             const currentVal = e.target.value;
             currentAudio.volume = currentVal / 100;
+            
+            // Синхронізуємо гучність з YouTube API
+            if (isYTAudioPlaying && window.ytAudioPlayer && typeof window.ytAudioPlayer.setVolume === 'function') {
+                window.ytAudioPlayer.setVolume(currentVal);
+            }
+            
             updateVolumeIcon(currentVal);
         });
     }
@@ -565,12 +904,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (progressContainer) {
         progressContainer.addEventListener('click', (e) => {
-            if (!currentAudio.src || !currentAudio.duration) return;
             const width = progressContainer.clientWidth;
             const clickPercent = e.offsetX / width;
-            currentAudio.currentTime = clickPercent * currentAudio.duration;
-            if (progressFill) progressFill.style.width = (clickPercent * 100) + '%';
-            if (!isPlaying) playTrack();
+
+            if (isYTAudioPlaying) {
+                if (window.ytAudioPlayer && typeof window.ytAudioPlayer.getDuration === 'function') {
+                    const duration = window.ytAudioPlayer.getDuration();
+                    if (duration) {
+                        window.ytAudioPlayer.seekTo(clickPercent * duration, true);
+                        if (progressFill) progressFill.style.width = (clickPercent * 100) + '%';
+                        if (!isPlaying) playTrack();
+                    }
+                }
+            } else {
+                if (!currentAudio.src || !currentAudio.duration) return;
+                currentAudio.currentTime = clickPercent * currentAudio.duration;
+                if (progressFill) progressFill.style.width = (clickPercent * 100) + '%';
+                if (!isPlaying) playTrack();
+            }
         });
     }
 
@@ -585,15 +936,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     currentAudio.addEventListener('timeupdate', updateProgress);
 
-    // ==========================================
-    // КАТЕГОРІЇ, НАСТРОЇ, ПОШУК ТА НАВІГАЦІЯ
-    // ==========================================
-
+    // === 4. ОГЛЯД (CATEGORIES & MOODS) ===
     function renderExplore() {
         if (!musicGrid) return;
         
         musicGrid.removeAttribute('style'); 
-        
         musicGrid.style.display = 'flex';
         musicGrid.style.flexDirection = 'column';
         musicGrid.style.alignItems = 'flex-start';
@@ -604,6 +951,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         currentViewMode = "explore";
         setExtraGridsVisibility(false);
+        toggleVideoScreenVisibility(false); 
+        if (musicScreen) musicScreen.style.display = 'block';
+        if (liveScreen) liveScreen.style.display = 'none';
 
         const topCategoriesGrid = document.createElement('div');
         topCategoriesGrid.style.display = 'grid';
@@ -693,35 +1043,102 @@ document.addEventListener('DOMContentLoaded', () => {
         musicGrid.appendChild(genresGrid);
     }
 
+    // === 5. НАВІГАЦІЯ ===
+    function showView(viewName) {
+        currentViewMode = viewName;
+        const heading = document.querySelector('.glow-text');
+
+        if (searchContainer) searchContainer.style.display = 'flex';
+        if (moodContainer) moodContainer.style.display = 'flex';
+
+        navItems.forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('active-playlist'));
+
+        navItems.forEach(item => {
+            const text = item.innerText.trim();
+            if (
+                (viewName === 'home' && text.includes("Головна")) ||
+                (viewName === 'explore' && text.includes("Огляд")) ||
+                (viewName === 'library' && text.includes("Бібліотека")) ||
+                (viewName === 'video' && text.includes("Відео")) ||
+                (viewName === 'stream' && text.includes("Трансляція"))
+            ) {
+                item.classList.add('active');
+            }
+        });
+
+        switch (viewName) {
+            case 'home':
+                if (heading) heading.innerText = "Слухати знову";
+                if (musicScreen) musicScreen.style.display = 'block';
+                if (liveScreen) liveScreen.style.display = 'none';
+                toggleVideoScreenVisibility(false);
+
+                currentFilteredSongs = [...allSongs];
+                setExtraGridsVisibility(true);
+                renderAllHomeSections();
+                break;
+
+            case 'explore':
+                if (heading) heading.innerText = "Огляд";
+                if (musicScreen) musicScreen.style.display = 'block';
+                if (liveScreen) liveScreen.style.display = 'none';
+                toggleVideoScreenVisibility(false);
+
+                if (moodContainer) moodContainer.style.display = 'none';
+                setExtraGridsVisibility(false);
+                renderExplore();
+                break;
+
+            case 'library':
+                if (heading) heading.innerText = "Твоя Бібліотека";
+                if (musicScreen) musicScreen.style.display = 'block';
+                if (liveScreen) liveScreen.style.display = 'none';
+                toggleVideoScreenVisibility(false);
+
+                setExtraGridsVisibility(false);
+                renderLibrary(allSongs, musicGrid, false);
+                break;
+
+            case 'video':
+                if (heading) heading.innerText = "Відео";
+                if (musicScreen) musicScreen.style.display = 'none';
+                if (liveScreen) liveScreen.style.display = 'none';
+                
+                if (moodContainer) moodContainer.style.display = 'none';
+                if (searchContainer) searchContainer.style.display = 'none';
+                setExtraGridsVisibility(false);
+                toggleVideoScreenVisibility(true);
+                break;
+
+            case 'stream':
+                if (heading) heading.innerText = "Пряма трансляція";
+                if (musicScreen) musicScreen.style.display = 'none';
+                if (liveScreen) liveScreen.style.display = 'block';
+                toggleVideoScreenVisibility(false);
+
+                if (moodContainer) moodContainer.style.display = 'none';
+                if (searchContainer) searchContainer.style.display = 'none';
+                setExtraGridsVisibility(false);
+                break;
+        }
+    }
+
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
-            navItems.forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-
             const text = item.innerText.trim();
-            const heading = document.querySelector('.glow-text');
-
-            if (searchContainer) searchContainer.style.display = 'flex';
-
-            if (text.includes("Огляд")) {
-                if (heading) heading.innerText = "Огляд";
-                if (moodContainer) moodContainer.style.display = 'none'; 
-                renderExplore(); 
-            } else {
-                if (moodContainer) moodContainer.style.display = 'flex';
-
-                if (text.includes("Головна")) {
-                    if (heading) heading.innerText = "Слухати знову";
-                    currentViewMode = "all";
-                    currentFilteredSongs = [...songs];
-                    setExtraGridsVisibility(true); 
-                    renderAllHomeSections();
-                } else if (text.includes("Бібліотека")) {
-                    if (heading) heading.innerText = "Твоя Бібліотека";
-                    setExtraGridsVisibility(false); 
-                    renderLibrary(songs, musicGrid, false);
-                }
+            
+            if (text.includes("Головна")) {
+                showView('home');
+            } else if (text.includes("Огляд")) {
+                showView('explore');
+            } else if (text.includes("Бібліотека")) {
+                showView('library');
+            } else if (text.includes("Відео")) {
+                showView('video');
+            } else if (text.includes("Трансляція")) {
+                showView('stream');
             }
         });
     });
@@ -729,6 +1146,10 @@ document.addEventListener('DOMContentLoaded', () => {
     moodPills.forEach(pill => {
         pill.addEventListener('click', () => {
             currentViewMode = "all";
+            toggleVideoScreenVisibility(false); 
+            if (musicScreen) musicScreen.style.display = 'block';
+            if (liveScreen) liveScreen.style.display = 'none';
+
             moodPills.forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
 
@@ -743,12 +1164,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectedMood = pill.innerText.trim();
             
             if (selectedMood === "Гарний настрій") {
-                currentFilteredSongs = [...songs];
+                currentFilteredSongs = [...allSongs];
                 setExtraGridsVisibility(true); 
                 renderAllHomeSections();
             } else {
                 setExtraGridsVisibility(false); 
-                currentFilteredSongs = songs.filter(s => s.mood === selectedMood);
+                currentFilteredSongs = allSongs.filter(s => s.mood === selectedMood);
                 renderLibrary(currentFilteredSongs, musicGrid, false);
             }
         });
@@ -778,15 +1199,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getActivePlaylistSongs() {
         if (currentViewMode === "playlist-liked") {
-            return songs.filter(s => likedSongs.includes(s.id));
+            return allSongs.filter(s => likedSongs.includes(s.id));
         } else if (currentViewMode.startsWith("playlist-custom-")) {
             const playlistName = currentViewMode.replace("playlist-custom-", "");
             const ids = customPlaylists[playlistName] || [];
-            return songs.filter(s => ids.includes(s.id));
+            return allSongs.filter(s => ids.includes(s.id));
         }
-        return [...songs];
+        return [...allSongs];
     }
 
+    // === 6. КЕРУВАННЯ ПЛЕЙЛІСТАМИ (САЙДБАР) ===
     function updateSidebarPlaylists() {
         playlistSection.innerHTML = `
             <div class="playlist-item" id="likedPlaylistBtn">
@@ -814,6 +1236,8 @@ document.addEventListener('DOMContentLoaded', () => {
             item.querySelector('.playlist-info-block').addEventListener('click', () => {
                 if (plName === "Зарубіжні хіти 2026") {
                     renderPromoPlaylistView();
+                } else if (customPlaylists[plName]) {
+                    selectCustomPlaylist(plName, item);
                 }
             });
 
@@ -833,6 +1257,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateSidebarPlaylists();
                 if (currentViewMode === "promo-playlist") {
                     renderPromoPlaylistView();
+                } else if (currentViewMode === `playlist-custom-${plName}`) {
+                    selectCustomPlaylist(plName, item);
                 }
             });
 
@@ -840,6 +1266,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         Object.keys(customPlaylists).forEach(name => {
+            if (favoritePlaylists.includes(name)) return;
+
             const item = document.createElement('div');
             item.className = 'playlist-item';
             item.style.position = 'relative';
@@ -872,10 +1300,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.stopPropagation();
                 if (confirm(`Ви впевнені, що хочете видалити плейліст "${name}"?`)) {
                     delete customPlaylists[name];
+                    favoritePlaylists = favoritePlaylists.filter(f => f !== name); 
                     localStorage.setItem('customPlaylists', JSON.stringify(customPlaylists));
+                    localStorage.setItem('favoritePlaylists', JSON.stringify(favoritePlaylists));
                     if (currentViewMode === `playlist-custom-${name}`) {
                         currentViewMode = "all";
-                        renderLibrary(songs, musicGrid, false);
+                        renderLibrary(allSongs, musicGrid, false);
                     }
                     updateSidebarPlaylists();
                 }
@@ -893,6 +1323,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showLikedPlaylist(element) {
         currentViewMode = "playlist-liked";
+        toggleVideoScreenVisibility(false); 
+        if (musicScreen) musicScreen.style.display = 'block';
+        if (liveScreen) liveScreen.style.display = 'none';
+
         moodPills.forEach(p => p.classList.remove('active'));
         navItems.forEach(i => i.classList.remove('active'));
         document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('active-playlist'));
@@ -905,16 +1339,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const heading = document.querySelector('.glow-text');
         if (heading) heading.innerText = "Улюблене";
 
-        const likedList = songs.filter(s => likedSongs.includes(s.id));
+        const likedList = allSongs.filter(s => likedSongs.includes(s.id));
         renderLibrary(likedList, musicGrid, false);
     }
 
     function selectCustomPlaylist(name, element) {
         currentViewMode = `playlist-custom-${name}`;
+        toggleVideoScreenVisibility(false); 
+        if (musicScreen) musicScreen.style.display = 'block';
+        if (liveScreen) liveScreen.style.display = 'none';
+
         moodPills.forEach(p => p.classList.remove('active'));
         navItems.forEach(i => i.classList.remove('active'));
         document.querySelectorAll('.playlist-item').forEach(item => item.classList.remove('active-playlist'));
-        element.classList.add('active-playlist');
+        
+        if (element) element.classList.add('active-playlist');
 
         if (moodContainer) moodContainer.style.display = 'flex'; 
         if (searchContainer) searchContainer.style.display = 'flex';
@@ -922,19 +1361,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const heading = document.querySelector('.glow-text');
         if (heading) {
+            const isFavorite = favoritePlaylists.includes(name);
             heading.innerHTML = `
-                ${name} 
-                <button id="editPlaylistTracksBtn" style="font-size: 14px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px 12px; border-radius: 12px; margin-left: 15px; cursor: pointer;">
-                    ⚙ Редагувати треки
-                </button>
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 15px;">
+                    <span>${name}</span>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="editPlaylistTracksBtn" style="font-size: 14px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 6px 14px; border-radius: 12px; cursor: pointer; transition: background 0.2s;">
+                            ⚙ Редагувати треки
+                        </button>
+                        <button id="favPlaylistBtn" style="font-size: 14px; background: ${isFavorite ? '#ffc107' : 'rgba(255,255,255,0.1)'}; border: 1px solid ${isFavorite ? '#ffc107' : 'rgba(255,255,255,0.2)'}; color: ${isFavorite ? '#000' : 'white'}; padding: 6px 14px; border-radius: 12px; cursor: pointer; transition: background 0.2s; font-weight: bold;">
+                            ${isFavorite ? '★ В обраному' : '☆ В обране'}
+                        </button>
+                    </div>
+                </div>
             `;
+            
             document.getElementById('editPlaylistTracksBtn').addEventListener('click', () => {
                 editPlaylistTracks(name, element);
+            });
+
+            document.getElementById('favPlaylistBtn').addEventListener('click', () => {
+                const idx = favoritePlaylists.indexOf(name);
+                if (idx > -1) {
+                    favoritePlaylists.splice(idx, 1);
+                } else {
+                    favoritePlaylists.push(name);
+                }
+                localStorage.setItem('favoritePlaylists', JSON.stringify(favoritePlaylists));
+                updateSidebarPlaylists();
+                selectCustomPlaylist(name, element);
             });
         }
 
         const ids = customPlaylists[name] || [];
-        const list = songs.filter(s => ids.includes(s.id));
+        const list = allSongs.filter(s => ids.includes(s.id));
         renderLibrary(list, musicGrid, false);
     }
 
@@ -942,9 +1402,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let message = `Редагування плейліста "${name}"\n`;
         message += "Введіть через кому НОВІ номери пісень (зі списку ваших улюблених):\n\n";
         
-        const favoriteSongsList = songs.filter(s => likedSongs.includes(s.id));
+        const favoriteSongsList = allSongs.filter(s => likedSongs.includes(s.id));
         if (favoriteSongsList.length === 0) {
-            alert("У вас немає треків в «Улюблене», щоб додати їх сюди.");
+            alert("У вас немає треків в «Улюблене», щоб додати сюди.");
             return;
         }
 
@@ -988,7 +1448,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const favoriteSongsList = songs.filter(s => likedSongs.includes(s.id));
+            const favoriteSongsList = allSongs.filter(s => likedSongs.includes(s.id));
 
             let message = "Оберіть номери пісень через кому, які хочете додати до плейліста:\n\n";
             favoriteSongsList.forEach((song, idx) => {
@@ -1015,11 +1475,290 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==================================================
-    // Кнопка закриття нижнього плеєра (панелі)
-    // ==================================================
+    // === ФУНКЦІОНАЛ ДОДАВАННЯ ВЛАСНИХ ТРЕКІВ / YOUTUBE URL ===
+    function showAddTrackModal() {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            font-family: sans-serif;
+        `;
+        modal.innerHTML = `
+            <div style="background: #181818; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <h3 style="color: white; margin: 0 0 20px 0; font-size: 20px; font-weight: bold; text-align: center;">Додати новий трек</h3>
+                
+                <label style="color: #9ca3af; font-size: 13px; display: block; margin-bottom: 5px;">Назва пісні</label>
+                <input type="text" id="newTrackTitle" placeholder="Наприклад: No Sleep" style="width: 100%; padding: 10px; background: #282828; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; margin-bottom: 15px; outline: none;" />
+                
+                <label style="color: #9ca3af; font-size: 13px; display: block; margin-bottom: 5px;">Виконавець</label>
+                <input type="text" id="newTrackArtist" placeholder="Наприклад: Kontraa" style="width: 100%; padding: 10px; background: #282828; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; margin-bottom: 15px; outline: none;" />
+                
+                <label style="color: #9ca3af; font-size: 13px; display: block; margin-bottom: 5px;">Посилання на аудіо (.mp3) або відео з YouTube</label>
+                <input type="text" id="newTrackFile" placeholder="MP3 URL або посилання на YouTube відео" style="width: 100%; padding: 10px; background: #282828; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; margin-bottom: 15px; outline: none;" />
+                
+                <label style="color: #9ca3af; font-size: 13px; display: block; margin-bottom: 5px;">Посилання на обкладинку (необов'язково)</label>
+                <input type="text" id="newTrackCover" placeholder="URL зображення" style="width: 100%; padding: 10px; background: #282828; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; margin-bottom: 15px; outline: none;" />
+                
+                <label style="color: #9ca3af; font-size: 13px; display: block; margin-bottom: 5px;">Настрій</label>
+                <select id="newTrackMood" style="width: 100%; padding: 10px; background: #282828; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; margin-bottom: 25px; outline: none;">
+                    <option value="Енергія">Енергія</option>
+                    <option value="Релакс">Релакс</option>
+                    <option value="Фокус">Фокус</option>
+                    <option value="Сум">Сум</option>
+                    <option value="Тренування">Тренування</option>
+                    <option value="У дорозі">У дорозі</option>
+                    <option value="Вечірка">Вечірка</option>
+                    <option value="Романтика">Романтика</option>
+                    <option value="Сон">Сон</option>
+                </select>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="cancelNewTrack" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Скасувати</button>
+                    <button id="saveNewTrack" style="background: #1db954; border: none; color: white; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">Зберегти</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const cancelBtn = modal.querySelector('#cancelNewTrack');
+        const saveBtn = modal.querySelector('#saveNewTrack');
+
+        cancelBtn.addEventListener('click', () => modal.remove());
+
+        saveBtn.addEventListener('click', () => {
+            const title = modal.querySelector('#newTrackTitle').value.trim();
+            const artist = modal.querySelector('#newTrackArtist').value.trim();
+            let file = modal.querySelector('#newTrackFile').value.trim();
+            let cover = modal.querySelector('#newTrackCover').value.trim();
+            const mood = modal.querySelector('#newTrackMood').value;
+
+            if (!title || !artist || !file) {
+                alert("Заповніть обов'язкові поля!");
+                return;
+            }
+
+            if (!cover) {
+                cover = "https://via.placeholder.com/220x220/0d1121/ffffff?text=Custom+Music";
+            }
+
+            // Перевірка на YouTube-посилання
+            let ytId = null;
+            const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = file.match(ytRegExp);
+            if (match && match[2].length === 11) {
+                ytId = match[2];
+            }
+
+            // Генеруємо унікальний ID для нового треку
+            const newId = 100 + userAddedSongs.length;
+
+            const newSong = {
+                id: newId,
+                title: title,
+                artist: artist,
+                cover: cover,
+                file: ytId ? '' : file, // Для YouTube-треку прямий лінк на файл не потрібен
+                mood: mood,
+                ytId: ytId || undefined
+            };
+
+            userAddedSongs.push(newSong);
+            localStorage.setItem('userAddedSongs', JSON.stringify(userAddedSongs));
+            
+            // Оновлюємо глобальну бібліотеку
+            allSongs = [...songs, ...userAddedSongs];
+            
+            modal.remove();
+            
+            // Оновлюємо інтерфейс
+            if (currentViewMode === 'library') {
+                renderLibrary(allSongs, musicGrid, false);
+            } else {
+                showView(currentViewMode);
+            }
+            
+            alert(`Пісню "${title}" успішно додано!`);
+        });
+    }
+
+    // Динамічне додавання кнопки "Додати свій трек" у сайдбар
+    if (btnNewPlaylist && btnNewPlaylist.parentElement) {
+        const btnAddCustomTrack = document.createElement('button');
+        btnAddCustomTrack.className = 'btn-add-track';
+        btnAddCustomTrack.innerText = '➕ Додати трек';
+        btnAddCustomTrack.style.cssText = `
+            background: linear-gradient(135deg, #ff0055, #7000ff);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            width: 100%;
+            transition: opacity 0.2s, transform 0.1s;
+        `;
+        btnAddCustomTrack.addEventListener('mouseenter', () => btnAddCustomTrack.style.transform = 'scale(1.02)');
+        btnAddCustomTrack.addEventListener('mouseleave', () => btnAddCustomTrack.style.transform = 'scale(1)');
+        btnAddCustomTrack.addEventListener('click', showAddTrackModal);
+        
+        btnNewPlaylist.parentNode.insertBefore(btnAddCustomTrack, btnNewPlaylist.nextSibling);
+    }
+
+
+    // =======================================================
+    // === 7. ФУНКЦІОНАЛ ТА КНОПКИ ТАЙМЕРА СНУ (SLEEP TIMER) ===
+    // =======================================================
+    
+    function startSleepTimer(minutes) {
+        stopSleepTimer(); // Скидаємо попередній, якщо він активний
+
+        sleepTimeRemaining = minutes * 60;
+        updateSleepTimerUI();
+
+        sleepTimerInterval = setInterval(() => {
+            sleepTimeRemaining--;
+            if (sleepTimeRemaining <= 0) {
+                fadeOutAndPause();
+                stopSleepTimer();
+            } else {
+                updateSleepTimerUI();
+            }
+        }, 1000);
+    }
+
+    function stopSleepTimer() {
+        if (sleepTimerInterval) clearInterval(sleepTimerInterval);
+        sleepTimerInterval = null;
+        sleepTimeRemaining = 0;
+        
+        const timerBtn = document.getElementById('sleepTimerBtn');
+        if (timerBtn) {
+            timerBtn.innerHTML = '⏱️';
+            timerBtn.title = 'Встановити таймер сну';
+            timerBtn.style.color = 'rgba(255, 255, 255, 0.5)';
+        }
+    }
+
+    function updateSleepTimerUI() {
+        const timerBtn = document.getElementById('sleepTimerBtn');
+        if (!timerBtn) return;
+
+        const mins = Math.floor(sleepTimeRemaining / 60);
+        const secs = sleepTimeRemaining % 60;
+        const formattedTime = `${mins}:${secs.toString().padStart(2, '0')}`;
+        
+        timerBtn.innerHTML = `⏱️ ${formattedTime}`;
+        timerBtn.title = `Таймер сну активний. Залишилось: ${formattedTime}`;
+        timerBtn.style.color = '#ff4444'; // Кнопка стає червоною, коли таймер активний
+    }
+
+    function fadeOutAndPause() {
+        let steps = 10;
+        let currentStep = 0;
+
+        if (isYTAudioPlaying) {
+            if (window.ytAudioPlayer && typeof window.ytAudioPlayer.getVolume === 'function') {
+                const startVol = window.ytAudioPlayer.getVolume();
+                const interval = setInterval(() => {
+                    currentStep++;
+                    const newVol = startVol * (1 - currentStep / steps);
+                    window.ytAudioPlayer.setVolume(newVol);
+                    
+                    if (currentStep >= steps) {
+                        clearInterval(interval);
+                        pauseTrack();
+                        // Відновлюємо початкову гучність плеєра для наступних треків
+                        window.ytAudioPlayer.setVolume(startVol);
+                    }
+                }, 200);
+            } else {
+                pauseTrack();
+            }
+        } else {
+            const originalVolume = currentAudio.volume;
+            const interval = setInterval(() => {
+                currentStep++;
+                currentAudio.volume = originalVolume * (1 - currentStep / steps);
+                
+                if (currentStep >= steps) {
+                    clearInterval(interval);
+                    pauseTrack();
+                    // Відновлюємо початкову гучність для наступних запусків
+                    currentAudio.volume = originalVolume;
+                }
+            }, 200);
+        }
+    }
+
+
+    // === 8. КНОПКА ЗАКРИТТЯ ПЛЕЄРА ТА КНОПКА ТАЙМЕРА ===
     const playerBar = document.querySelector('.player-bar');
     if (playerBar) {
+        
+        // 8.1 Кнопка Таймера Сну
+        const sleepTimerBtn = document.createElement('button');
+        sleepTimerBtn.id = 'sleepTimerBtn';
+        sleepTimerBtn.innerText = '⏱️';
+        sleepTimerBtn.title = 'Встановити таймер сну';
+        sleepTimerBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 18px;
+            cursor: pointer;
+            margin-left: 15px;
+            transition: color 0.2s, transform 0.2s;
+            line-height: 1;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+
+        sleepTimerBtn.addEventListener('mouseenter', () => {
+            if (sleepTimeRemaining <= 0) {
+                sleepTimerBtn.style.color = '#a855f7'; // Гарний фіолетовий фокус
+            }
+            sleepTimerBtn.style.transform = 'scale(1.1)';
+        });
+        sleepTimerBtn.addEventListener('mouseleave', () => {
+            if (sleepTimeRemaining <= 0) {
+                sleepTimerBtn.style.color = 'rgba(255, 255, 255, 0.5)';
+            }
+            sleepTimerBtn.style.transform = 'scale(1)';
+        });
+
+        sleepTimerBtn.addEventListener('click', () => {
+            if (sleepTimeRemaining > 0) {
+                if (confirm(`Таймер сну вже запущено. Залишилось ${Math.ceil(sleepTimeRemaining / 60)} хв.\nБажаєте скасувати таймер?`)) {
+                    stopSleepTimer();
+                }
+                return;
+            }
+
+            const choices = prompt("Встановіть таймер сну (в хвилинах):\nВведіть ціле число (наприклад: 5, 15, 30, 45, 60):");
+            if (choices === null) return;
+
+            const mins = parseInt(choices.trim(), 10);
+            if (!isNaN(mins) && mins > 0) {
+                startSleepTimer(mins);
+                alert(`Таймер сну успішно встановлено на ${mins} хв. Гучність плавно згасне перед вимкненням!`);
+            } else {
+                alert("Введіть коректне число хвилин більше нуля.");
+            }
+        });
+
+        playerBar.appendChild(sleepTimerBtn);
+
+        // 8.2 Кнопка закриття плеєра
         const closePlayerBtn = document.createElement('button');
         closePlayerBtn.id = 'closePlayerBtn';
         closePlayerBtn.innerText = '✕';
@@ -1030,7 +1769,7 @@ document.addEventListener('DOMContentLoaded', () => {
             color: rgba(255, 255, 255, 0.5);
             font-size: 22px;
             cursor: pointer;
-            margin-left: 25px;
+            margin-left: 20px;
             transition: color 0.2s, transform 0.2s;
             line-height: 1;
             padding: 5px;
@@ -1050,15 +1789,98 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         closePlayerBtn.addEventListener('click', () => {
-            pauseTrack();                    // Зупиняємо музику
-            currentAudio.src = '';           // Очищаємо аудіофайл
-            playerBar.classList.remove('active'); // Ховаємо сам плеєр знизу
+            pauseTrack();
+            stopSleepTimer();
+            currentAudio.src = '';           
+            playerBar.classList.remove('active'); 
         });
 
-        // Додаємо кнопку праворуч (після повзунка гучності)
         playerBar.appendChild(closePlayerBtn);
     }
 
+    // ==========================================
+    // === 9. ЗАПУСК ТА ІНІЦІАЛІЗАЦІЯ ДОДАТКУ ===
+    // ==========================================
+    showView('home'); 
     updateSidebarPlaylists();
-    renderAllHomeSections();
+
+    // === 9.1 ВІДНОВЛЕННЯ ОСТАННЬОЇ ПІСНІ З LOCALSTORAGE ===
+    const lastPlayedId = localStorage.getItem('lastPlayedSongId');
+    if (lastPlayedId !== null) {
+        const idNum = parseInt(lastPlayedId, 10);
+        const lastSong = allSongs.find(s => s.id === idNum);
+        
+        if (lastSong) {
+            currentTrackTitle.innerText = lastSong.title;
+            currentTrackArtist.innerText = lastSong.artist;
+            currentTrackImg.src = lastSong.cover;
+            
+            if (lastSong.ytId) {
+                isYTAudioPlaying = true;
+                // Даємо трохи часу YouTube Iframe API завантажитись перед ініціалізацією
+                const checkYT = setInterval(() => {
+                    if (window.ytAudioPlayer && typeof window.ytAudioPlayer.cueVideoById === 'function') {
+                        window.ytAudioPlayer.cueVideoById(lastSong.ytId);
+                        clearInterval(checkYT);
+                    }
+                }, 500);
+            } else {
+                isYTAudioPlaying = false;
+                currentAudio.src = lastSong.file;
+            }
+            
+            // Робимо плеєр активним, але не запускаємо звук без кліку користувача
+            if (playerBar) playerBar.classList.add('active');
+            
+            // Налаштовуємо індекси черги
+            currentSongIndex = allSongs.findIndex(s => s.id === idNum);
+            currentPlayingList = [...allSongs];
+        }
+    }
 });
+
+// === 10. КЕРУВАННЯ LIVE ТРАНСЛЯЦІЄЮ ТА ФОНОВИМ YOUTUBE АУДІО ===
+let youtubePlayer;
+
+const tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+const firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+window.onYouTubeIframeAPIReady = () => {
+    // 1. Live player
+    const iframeElement = document.querySelector('.live-video-screen iframe');
+    if (iframeElement) {
+        youtubePlayer = new YT.Player(iframeElement, {
+            events: {
+                'onReady': () => console.log('Live Player Ready')
+            }
+        });
+    }
+
+    // 2. Створюємо прихований контейнер для програвання YouTube як фонового аудіо
+    let ytAudioContainer = document.getElementById('ytAudioContainer');
+    if (!ytAudioContainer) {
+        ytAudioContainer = document.createElement('div');
+        ytAudioContainer.id = 'ytAudioContainer';
+        ytAudioContainer.style.display = 'none';
+        document.body.appendChild(ytAudioContainer);
+    }
+
+    // Ініціалізація фонового плеєра для аудіо з YouTube
+    window.ytAudioPlayer = new YT.Player('ytAudioContainer', {
+        height: '0',
+        width: '0',
+        playerVars: {
+            'autoplay': 0,
+            'controls': 0
+        },
+        events: {
+            'onStateChange': (event) => {
+                if (typeof window.handleYTAudioStateChange === 'function') {
+                    window.handleYTAudioStateChange(event);
+                }
+            }
+        }
+    });
+};

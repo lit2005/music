@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Music Clone - Cosmic Edition</title>
+    <!-- Додано іконки для чату та плеєра трансляції -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Кнопка мобільного меню (гамбургер) -->
+    <button class="menu-toggle">☰</button>
+
+    <aside class="sidebar">
+        <!-- Логотип -->
+        <div class="logo-container">
+            <img src="assets/pngtree-music-logo-png-image_6389182.png" alt="Musical Sound Logo" class="logo-img">
+            <span class="logo-text">musical sound</span>
+        </div>
+        
+        <nav>
+            <a href="#" id="go-home" class="nav-item active">
+                <img src="assets/home.png" class="nav-icon red-tint" alt="Головна">
+                Головна
+            </a>
+            <a href="#" class="nav-item">
+                <img src="assets/explore.png" class="nav-icon teal-tint" alt="Огляд">
+                Огляд
+            </a>
+            <a href="#" class="nav-item">
+                <img src="assets/library.png" class="nav-icon gold-tint" alt="Бібліотека">
+                Бібліотека
+            </a>
+            
+            <!-- Пункт «Відео» -->
+            <a href="#" id="go-video" class="nav-item">
+                <img src="assets/free-icon-video-4211530.png" class="nav-icon green-tint" alt="Відео">
+                Відео
+            </a>
+            
+            <!-- Пункт «Трансляція» -->
+            <a href="#" id="go-live" class="nav-item">
+                <img src="assets/free-icon-video-camera-686458.png" class="nav-icon green-tint" alt="Трансляція">
+                Трансляція
+            </a>
+        </nav>
+        <div class="divider"></div>
+        <button class="btn-new-playlist"><span>+</span> Новий плейліст</button>
+
+        <div class="playlist-section"></div>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Шукайте свою музику...">
+            </div>
+            <a href="register.html" class="user-profile-glow" style="text-decoration: none; cursor: pointer;">
+                <div class="avatar-circle">
+                    <img src="assets/avatar.png" alt="Profile">
+                </div>
+            </a>
+        </header>
+
+        <!-- ЕКРАН МУЗИКИ -->
+        <div id="music-screen">
+            <div class="mood-pills">
+                <button class="pill active">Гарний настрій</button>
+                <button class="pill">Релакс</button>
+                <button class="pill">Енергія</button>
+                <button class="pill">У дорозі</button>
+                <button class="pill">Сум</button>
+                <button class="pill">Романтика</button>
+                <button class="pill">Тренування</button>
+                <button class="pill">Вечірка</button>
+                <button class="pill">Фокус</button>
+                <button class="pill">Сон</button>
+            </div>
+
+            <!-- 1 БЛОК: Слухати знову -->
+            <section class="content-section">
+                <div class="section-header">
+                    <div class="user-info-row">
+                        <div class="title-text">
+                            <span class="username">LILY DN</span>
+                            <h2 class="glow-text">Слухати знову</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="music-grid"></div>
+            </section>
+
+            <!-- 2 БЛОК: Рекомендовано -->
+            <section class="content-section" style="margin-top: 40px;">
+                <div class="section-header">
+                    <div class="user-info-row">
+                        <div class="title-text">
+                            <span class="username">Рекомендовано</span>
+                            <h2 class="glow-text">Тобі сподобається</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="music-grid" id="recommendedGrid"></div>
+            </section>
+
+            <!-- 3 БЛОК: Нові релізи -->
+            <section class="content-section" style="margin-top: 40px;">
+                <div class="section-header">
+                    <div class="user-info-row">
+                        <div class="title-text">
+                            <span class="username">Новинки</span>
+                            <h2 class="glow-text">Нові релізи</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="music-grid" id="newReleasesGrid"></div>
+            </section>
+
+            <!-- 4 БЛОК: Свіжі чарти -->
+            <section class="content-section" style="margin-top: 40px;">
+                <div class="section-header">
+                    <div class="user-info-row">
+                        <div class="title-text">
+                            <span class="username">Популярне</span>
+                            <h2 class="glow-text">Свіжі чарти</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="music-grid" id="chartsGrid"></div>
+            </section>
+        </div>
+
+     <!-- ЕКРАН ВІДЕО -->
+        <div id="video-screen" style="display: none;">
+            <section class="content-section">
+                <div class="section-header">
+                    <div class="user-info-row">
+                        <div class="title-text">
+                            <span class="username">Музичні відео</span>
+                            <h2 class="glow-text">Перегляд відео</h2>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Сітка для відеокліпів -->
+                <div class="video-grid">
+                    <!-- Відео 1 -->
+                    <div class="video-card">
+                        <div class="video-wrapper">
+                            <iframe 
+                                src="https://www.youtube.com/embed/fpgZffUIeMg?enablejsapi=1&rel=0" 
+                                title="YouTube video player" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+
+                    <!-- Відео 2 -->
+                    <div class="video-card">
+                        <div class="video-wrapper">
+                            <iframe 
+                                src="https://www.youtube.com/embed/RF0k8anOW6o?enablejsapi=1&rel=0" 
+                                title="YouTube video player" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+
+                    <!-- Відео 3 -->
+                    <div class="video-card">
+                        <div class="video-wrapper">
+                            <iframe 
+                                src="https://www.youtube.com/embed/d2HQg-ZRjzs?enablejsapi=1&rel=0" 
+                                title="YouTube video player" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+
+                    <!-- Відео 4 (Kp-eibuQpWg) -->
+                    <div class="video-card">
+                        <div class="video-wrapper">
+                            <iframe 
+                                src="https://www.youtube.com/embed/Kp-eibuQpWg?enablejsapi=1&rel=0" 
+                                title="YouTube video player" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+
+                    <!-- Відео 5 (bvvwn0nQ8sI) -->
+                    <div class="video-card">
+                        <div class="video-wrapper">
+                            <iframe 
+                                src="https://www.youtube.com/embed/bvvwn0nQ8sI?enablejsapi=1&rel=0" 
+                                title="YouTube video player" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+
+                    <!-- Відео 6 (89ihROphQJM) -->
+                    <div class="video-card">
+                        <div class="video-wrapper">
+                            <iframe 
+                                src="https://www.youtube.com/embed/89ihROphQJM?enablejsapi=1&rel=0" 
+                                title="YouTube video player" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+
+                    <!-- Відео 7 (PHVVgsk9hyE) -->
+                    <div class="video-card">
+                        <div class="video-wrapper">
+                            <iframe 
+                                src="https://www.youtube.com/embed/PHVVgsk9hyE?enablejsapi=1&rel=0" 
+                                title="YouTube video player" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ЕКРАН ТРАНСЛЯЦІЇ -->
+        <div id="live-screen" style="display: none;">
+            <div class="live-wrapper">
+                <!-- ЛЕВА ЧАСТИНА: ПЛЕЄР СТРІМУ -->
+                <div class="live-player-container">
+                    <div class="live-player-header">
+                        <div class="live-author-avatar">
+                            <img src="assets/pngtree-music-logo-png-image_6389182.png" alt="Logo" onerror="this.src='https://via.placeholder.com/40/a855f7/ffffff?text=MS'">
+                        </div>
+                        <div class="live-author-info">
+                            <h3 class="live-author-title">Preview Live Stream</h3>
+                            <p class="live-author-subtitle">musical sound</p>
+                        </div>
+                    </div>
+
+                    <div class="live-video-screen">
+                        <iframe 
+                            src="https://www.youtube.com/embed/b-bK2Vn3D38?autoplay=1&mute=1&modestbranding=1&rel=0&controls=0&disablekb=1" 
+                            title="YouTube video player" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+
+                    <div class="live-player-controls">
+                        <div class="live-controls-left">
+                            <button class="live-control-btn live-play-btn"><i class="fas fa-pause"></i></button>
+                            <span class="live-status-badge"><span class="pulse-dot"></span> НА ЖИВО</span>
+                        </div>
+                        <div class="live-progress-container" style="pointer-events: none; opacity: 0.8;">
+                            <div class="live-progress-bar">
+                                <div class="live-progress-current" style="width: 100%; background: #ef4444; box-shadow: 0 0 10px #ef4444;"></div>
+                            </div>
+                        </div>
+                        <div class="live-controls-right">
+                            <button class="live-control-btn" id="liveVolIcon"><i class="fas fa-volume-up"></i></button>
+                            <input type="range" id="liveVolumeSlider" min="0" max="1" step="0.1" value="1" style="width: 80px; cursor: pointer;">
+                            <button class="live-control-btn"><i class="fas fa-expand"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ПРАВА ЧАСТИНА: ЧАТ -->
+                <div class="live-chat-container">
+                    <div class="live-chat-messages" id="liveChatBox">
+                        <div class="live-chat-placeholder" id="liveChatPlaceholder">
+                            <span>Ласкаво просимо до онлайн-чату! 🚀</span>
+                        </div>
+                    </div>
+                    <div class="live-chat-input-area">
+                        <div class="live-input-wrapper">
+                            <input type="text" placeholder="Напишіть повідомлення..." class="live-chat-input" id="liveChatInput">
+                            <button class="live-emoji-btn"><i class="far fa-smile"></i></button>
+                        </div>
+                        <button class="live-send-btn" id="liveSendBtn"><i class="fas fa-arrow-up"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="player-bar">
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Левая часть: Инфо о треке -->
+        <div class="player-info">
+            <img src="assets/cover1.jpg" class="current-track-img" id="currentTrackImg">
+            <div class="track-meta">
+                <div class="track-title" id="currentTrackTitle">Програвач порожній</div>
+                <div class="track-artist" id="currentTrackArtist">Оберіть трек</div>
+            </div>
+        </div>
+
+        <!-- Центральная часть: Кнопки управления -->
+        <div class="player-controls">
+            <button class="player-btn">⏮</button>
+            <button id="mainPlayBtn" class="player-btn play-pause">
+                <img src="assets/play.png" id="playBtnImg" alt="Play">
+            </button>
+            <button class="player-btn">⏭</button>
+            
+            <button id="repeatBtn" class="player-btn repeat-control" title="Повторювати трек">
+                <img src="assets/backup.png" id="repeatBtnImg" alt="Repeat">
+            </button>
+        </div>
+
+        <!-- Правая часть: Управление громкостью -->
+        <div class="volume-controls" style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+            <img src="assets/audio-speaker1.png" class="volume-icon" alt="Volume">
+            <input type="range" class="volume-slider" min="0" max="100" value="80">
+        </div>
+    </footer>
+
+    <script src="./js/main.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const liveChatInput = document.getElementById('liveChatInput');
+            const liveSendBtn = document.getElementById('liveSendBtn');
+            const liveChatBox = document.getElementById('liveChatBox');
+            const liveChatPlaceholder = document.getElementById('liveChatPlaceholder');
+
+            function sendLiveMessage() {
+                const text = liveChatInput.value.trim();
+                if (text === '') return;
+
+                if (liveChatPlaceholder) {
+                    liveChatPlaceholder.style.display = 'none';
+                }
+
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const msg = document.createElement('div');
+                msg.className = 'live-chat-message sent';
+                msg.innerHTML = `
+                    <div class="live-message-content">
+                        <span class="live-user-name">Ви</span>
+                        <p class="live-message-text">${text}</p>
+                        <span class="live-message-time">${time}</span>
+                    </div>
+                `;
+                
+                liveChatBox.appendChild(msg);
+                liveChatInput.value = '';
+                liveChatBox.scrollTop = liveChatBox.scrollHeight;
+            }
+
+            if (liveSendBtn) {
+                liveSendBtn.addEventListener('click', sendLiveMessage);
+            }
+            
+            if (liveChatInput) {
+                liveChatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') sendLiveMessage();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
